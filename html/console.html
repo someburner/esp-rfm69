@@ -1,0 +1,111 @@
+  <!--
+<html><head>
+    <title>esp-rfm69</title>
+    <link rel="stylesheet" href="pure.css">
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="ui.js"></script>
+</head>
+<body>
+<div id="layout">
+ -->
+    <div id="main">
+    <div class="header">
+    <h1>Radio Console</h1>
+    </div>
+
+    <div class="content">
+        <p>Shows data being sent/received from the RFM69.</p>
+        <form class="pure-form pure-g">
+            <input id="send-txt" class="pure-input-15-24"type="text" placeholder="Enter text to send">
+            <input id="node-id" class="pure-input-2-24" style="margin-right:5px;" type="text" placeholder="Node#">
+            <button id="send-button" onClick="do_send(this.id)" class="pure-input-3-24 pure-button-primary pure-button" href="#">Send</button>
+            <button id="clear-button" onClick="do_send(this.id)" class="pure-input-3-24 button-secondary pure-button" href="#">Clear</button>
+        </form>
+          <pre class="console" id="console" style="height: 200px;"></pre>
+          <div class="pure-g">
+              <div class="pure-u-1-2">
+                  <h3>Firmware Update</h3>
+                  <form class="pure-form-stacked" action="/flash/upload" enctype="multipart/form-data" method="post" onsubmit="return doUpgrade();">
+                  <input id="fw-file" class="text" name="filename" type="file" onkeydown="return false">
+                  <button type="submit" class="pure-button pure-button-primary">Upload</button>
+                  </form>
+                  <form class="pure-form" action="/flash/test" method="get">
+                    <button type="submit" class="pure-button">Download binary</button>
+                  </form>
+                  <form class="pure-form" action="/console/fwupdate" method="get">
+                    <button type="submit" class="pure-button">Begin Update</button>
+                  </form>
+              </div>
+          </div>
+       </div>
+   </div>
+</div>
+
+<script type="text/javascript">console_url = "/console/text"</script>
+<script src="console.js"></script>
+<script type="text/javascript">
+    onLoad(function () {
+        fetchText(100, true);
+        var nodeid = localStorage.getItem('nodeid');
+        if (nodeid != "undefined" || nodeid != "null") {
+            document.getElementById('node-id').value = nodeid;
+        }
+//    function do_send(clicked_id)
+//    {
+//        alert(clicked_id.);
+//    }
+//    document.getElementById('send-button').onclick = do_send;
+
+    $("#send-button").addEventListener("click", function (e) {
+        e.preventDefault();
+        var nodeid = document.getElementById('node-id');
+        var nodeint = parseInt(nodeid.value);
+        if ((nodeint > 0) && (nodeint < 255)) {
+            if (localStorage) {
+                localStorage.setItem('nodeid', nodeid.value);
+            }
+        } else {
+            alert("Invalid id");
+            nodeint = 0;
+        }
+
+        if (nodeint != 0) {
+            txt = document.getElementById('send-txt');
+            if (txt.value == '') {
+                alert("Nothing to send");
+            } else if (txt.value.length > 60) {
+                alert("String is too long");
+            } else {
+              ajaxSpin('POST', "/console/senddata?nodeid="+nodeid.value+"&txt=" + txt.value,
+                  function (resp) {
+                      showNotification("Data Sent!");
+                      co.textEnd = 0;
+                  },
+                  function (s, st) {
+                      showWarning("Error sending data: " +txt.value);
+                  }
+              );
+            }
+        }
+    });
+
+      $("#clear-button").addEventListener("click", function (e) {
+          e.preventDefault();
+          var co = $("#console");
+          co.innerHTML = "";
+          ajaxSpin('POST', "/console/clear",
+              function (resp) {
+                  showNotification("Log Cleared");
+                  co.textEnd = 0;
+              },
+              function (s, st) {
+                  showWarning("Error clearing log");
+              }
+          );
+      });
+   });
+
+ </script>
+</body>
+</html>
