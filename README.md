@@ -1,4 +1,10 @@
-#ESP8266 RFM69W Driver
+#NOTICE
+
+This version is **deprecated**. Latest version is based on esp-ginx/nodemcu. See master branch. Leaving this as a reference for anyone that needs it. 
+
+
+##ESP8266 RFM69W Driver
+-----------------------
 
 ##Overview
 -----------------------
@@ -86,6 +92,6 @@ RFM69, which is what I based mine on.
 ##Changelog
 -----------------------
 
-`1.0.0`
+`0.1.0`
 
 * First release
