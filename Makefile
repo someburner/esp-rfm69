@@ -1,84 +1,107 @@
+#  copyright (c) 2010 Espressif System
 #
-# Makefile for esp-rfm69
-#
-# Start by setting the directories for the toolchain a few lines down
-# the default target will build the firmware images
-# `make flash` will flash the esp serially
-# `make wiflash` will flash the esp over wifi
-# `VERBOSE=1 make ...` will print debug info
-# `ESP_HOSTNAME=my.esp.example.com make wiflash` is an easy way to override a variable
-# --------------- toolchain configuration ---------------
+ifndef PDIR
+endif
 
-# Base directory for the compiler. Needs a / at the end.
-# Typically you'll install https://github.com/pfalcon/esp-open-sdk
-XTENSA_TOOLS_ROOT ?= $(abspath /home/jeffrey/esp-open-sdk/xtensa-lx106-elf/bin)/
+# Base directory for the compiler
+XTENSA_TOOLS_ROOT ?= $(abspath /YOUR-PATH/esp-open-sdk-1.5.2/xtensa-lx106-elf/bin)/
+SDK_ROOT 			?= $(abspath /YOUR-PATH/esp-open-sdk-1.5.2/sdk)/
+PROJ_ROOT 			?= $(abspath /YOUR-PATH/esp-rfm69)/
 
 # Base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= $(abspath ../esp_iot_sdk_v1.4.0)
+SDK_BASE				?= $(abspath /YOUR-PATH/esp_iot_sdk_v1.5.2)
 
-# Esptool.py path and port
-# https://github.com/themadinventor/esptool
-#ESPTOOL		?= $(abspath /home/jeffrey/esp-open-sdk/esptool/esptool.py)
-ESPTOOL		?= ./tools/esptool/esptool.py
-ESPPORT		?= /dev/ftdi_esp
-ESPBAUD		?= 460800
-
-# --------------- chipset configuration   ---------------
-
-# Pick your flash size: "512KB", "1MB", or "4MB"
-FLASH_SIZE ?= 4MB
-
-# Winbond 25Q32 4MB flash, typ for esp-12
-# Here we're using two partitions of approx 0.5MB because that's what's easily available in terms
-# of linker scripts in the SDK. Ideally we'd use two partitions of approx 1MB, the remaining 2MB
-# cannot be used for code (esp8266 limitation).
-ESP_SPI_SIZE        ?= 6       # 6->4MB (1MB+1MB) or 4->4MB (512KB+512KB)
-ESP_FLASH_MODE      ?= 0       # 0->QIO, 2->DIO
-ESP_FLASH_FREQ_DIV  ?= 15      # 15->80Mhz
-# ESP_FLASH_MAX       ?= 503808  # max bin file for 512KB flash partition: 492KB
-ESP_FLASH_MAX       ?= 1028096 # max bin file for 1MB flash partition: 1004KB
-ET_FS               ?= 32m     # 32Mbit flash size in esptool flash command
-ET_FF               ?= 80m     # 80Mhz flash speed in esptool flash command
-
-# where to flash blank.bin to erase wireless settings
-# Basically take 7F000 - 400*4 (aka 1024*4) = 7E000
-ET_BLANK            ?= 0x7E000
+#############################################################
+# User Configuration
+#############################################################
+#Flash Spiffs?
+FLASH_SPIFFS			?= yes
+SPIFFS_ADDR				?= 0x80000
 
 # Build time Wifi Cfg
-#STA_SSID ?= WiFiSSID
-#STA_PASS ?= wifipassword
+STA_SSID 				?= YOUR_SSID
+STA_PASS 				?= yourpassword
 
-# hostname or IP address for wifi flashing
-ESP_HOSTNAME        ?= esp-rfm69
+#Choose to enable MQTT client
+BUILD_MQTT				= 1
 
-# RFM69 settings
-#RFM69_FREQ          ?= 43
+#Pin number for RFM69 interrupts
+RFM_INTR_PIN        ?= 2
+#Rfm frequency 91 = 915MHz; 43 = 433MHz
 RFM69_FREQ          ?= 91
+#Network ID of both units
 RFM69_NET_ID        ?= 100
+
+#915 MHz ID of bridge rf chip
 RFM69_NODE_ID       ?= 1
-RFM69_IS_HW         ?= 0
+#915 MHz ID of device in pit
+RFM69_DEV_ID        ?= 3
+
+RFM69_IS_HW         ?= 1
 RFM69_ENCRYPT_KEY   ?= \"Rfm69_EncryptKey\"
-# Rate at which the ESP 'pings' the node device, in ms
-PING_RATE           ?= 600000
 
-ATMEGA_FLASH_MAX    ?= 32768  # max bin file for atmega328p
+# max bin file for 1MB flash partition: 1004KB
+ESP_FLASH_MAX       ?= 1028096
 
-# The pin assignments below are used when the settings in flash are invalid, they
-# can be changed via the web interface
-# GPIO pin used to reset attached microcontroller, acative low
-MCU_RESET_PIN       ?= -1
-# GPIO pin used with reset to reprogram MCU (ISP=in-system-programming, unused with AVRs), active low
-MCU_ISP_PIN         ?= -1
-# GPIO pin used for "connectivity" LED, active low
-LED_CONN_PIN        ?= 0
+#Flash esp_init_data_default?
+FLASH_INIT_DEFAULT	?= no
 
-# --------------- esp-rfm69 version        ---------------
+#Flash blank.bin?
+FLASH_BLANK				?= no
+#############################################################
+# Spiffy Compressor
+# 		Usage: make spiffy_img.o
+#############################################################
+VERBOSE 							= 1
 
-# This queries git to produce a version string like "esp-rfm69 v0.9.0 2015-06-01 34bc76"
-# If you don't have a proper git checkout or are on windows, then simply swap for the constant
-# Steps to release: create release on github, git pull, git describe --tags to verify you're
-# on the release tag, make release, upload esp-rfm69.tgz into the release files
-#VERSION ?= "esp-rfm69 custom version"
+COMPRESS_W_HTMLCOMPRESSOR 	?= yes
+GZIP_COMPRESSION				 = 1
+HTML_COMPRESSOR 				?= htmlcompressor-1.5.3.jar
+YUI_COMPRESSOR 				?= yuicompressor-2.4.8.jar
+
+SPFY_DIR 		= $(PROJ_ROOT)tools/spiffy-compressor/
+SPFY_SRC_DIR 	= $(SPFY_DIR)src/
+SPFY_BLD_DIR 	= $(SPFY_DIR)build/
+HTML_PATH 		= $(SPFY_DIR)html/
+WIFI_PATH 		= $(HTML_PATH)wifi/
+
+SPFY_MKDIR 	= mkdir -p
+
+V ?= $(VERBOSE)
+ifeq ("$(V)","1")
+Q :=
+vecho := @true
+MAKEPDIR :=
+else
+Q := @
+vecho := @echo
+MAKEPDIR := --no-print-directory -s
+endif
+
+# ifeq ($(GZIP_COMPRESSION), 1)
+# SPIFFY_DEFINES += -DGZIP_COMPRESSION=$(GZIP_COMPRESSION)
+# endif
+
+#############################################################
+# Esptool flash options:
+# 		Configured for esp-12e (4MByte Windbond)
+#############################################################
+ESPBAUD 				  	?= 230400 	# 115200, 230400, 460800
+ESP_FLASH_MODE      	?= 0			# 0->QIO, 2->DIO
+ESP_FLASH_FREQ_DIV  	?= 15			# 15->80Mhz
+ET_FS               	?= 32m     	# 32Mbit flash size in esptool flash command
+ET_FF               	?= 80m     	# 80Mhz flash speed in esptool flash command
+ET_BLANK            	?= 0x3FE000 # where to flash blank.bin to erase wireless settings
+ESP_INIT  			  	?= 0x3FC000 # flash init data provided by espressif
+
+#relative path of esptool script
+ESPTOOL					?= ../tools/esptool.py
+#absolute path of sdk bin folder
+ESPTOOLMAKE				:= $(XTENSA_TOOLS_ROOT)
+
+#############################################################
+# Version Info
+#############################################################
 DATE    := $(shell date '+%F %T')
 BRANCH  := $(shell if git diff --quiet HEAD; then git describe --tags; \
                    else git symbolic-ref --short HEAD; fi)
@@ -86,318 +109,286 @@ SHA     := $(shell if git diff --quiet HEAD; then git rev-parse --short HEAD | c
                    else echo "development"; fi)
 VERSION ?=esp-rfm69 $(BRANCH) - $(DATE) - $(SHA)
 
-# --------------- esp-rfm69 config options ---------------
-
-# If CHANGE_TO_STA is set to "yes" the esp-rfm69 module will switch to station mode
-# once successfully connected to an access point. Else it will stay in AP+STA mode.
-
-CHANGE_TO_STA ?= yes
-
-# --------------- esphttpd config options ---------------
-
-# If GZIP_COMPRESSION is set to "yes" then the static css, js, and html files will be compressed
-# with gzip before added to the espfs image and will be served with gzip Content-Encoding header.
-# This could speed up the downloading of these files, but might break compatibility with older
-# web browsers not supporting gzip encoding because Accept-Encoding is simply ignored.
-# Enable this option if you have large static files to serve (for e.g. JQuery, Twitter bootstrap)
-# If you have text based static files with different extensions what you want to serve compressed
-# then you will need to add the extension to the following places:
-# - Add the extension to this Makefile at the webpages.espfs target to the find command
-# - Add the extension to the gzippedFileTypes array in the user/httpd.c file
-#
-# Adding JPG or PNG files (and any other compressed formats) is not recommended, because GZIP
-# compression does not work effectively on compressed files.
-
-#Static gzipping is disabled by default.
-GZIP_COMPRESSION ?= yes
-
-# If COMPRESS_W_HTMLCOMPRESSOR is set to "yes" then the static css and js files will be compressed with
-# htmlcompressor and yui-compressor. This option works only when GZIP_COMPRESSION is set to "yes".
-# https://code.google.com/p/htmlcompressor/#For_Non-Java_Projects
-# http://yui.github.io/yuicompressor/
-# enabled by default.
-COMPRESS_W_HTMLCOMPRESSOR ?= yes
-HTML_COMPRESSOR ?= htmlcompressor-1.5.3.jar
-YUI_COMPRESSOR ?= yuicompressor-2.4.8.jar
-
-# -------------- End of config options -------------
-
-HTML_PATH = $(abspath ./html)/
-WIFI_PATH = $(HTML_PATH)wifi/
-
-# Output directors to store intermediate compiled files
-# relative to the project directory
-BUILD_BASE	= build
-FW_BASE	  	= firmware
-
-# name for the target project
-TARGET		= httpd
-
-# espressif tool to concatenate sections for OTA upload using bootloader v1.2+
-APPGEN_TOOL	?= gen_appbin.py
-
-# which modules (subdirectories) of the project to include in compiling
-MODULES		= espfs httpd user serial cmd driver rfm69
-EXTRA_INCDIR	= include .
-
-# libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 wpa main lwip
-
-# compiler flags using during compilation of source files
-CFLAGS		= -Os -ggdb -std=c99 -Werror -Wpointer-arith -Wundef -Wall -Wl,-EL \
-	-fno-inline-functions -mno-serialize-volatile -nostdlib -mlongcalls \
-	-mtext-section-literals -ffunction-sections -fdata-sections -D__ets__ \
-	-DICACHE_FLASH -D_STDINT_H -Wno-address  -DFIRMWARE_SIZE=$(ESP_FLASH_MAX) \
-	-DMCU_RESET_PIN=$(MCU_RESET_PIN) -DMCU_ISP_PIN=$(MCU_ISP_PIN) \
-	-DLED_CONN_PIN=$(LED_CONN_PIN) -DLED_SERIAL_PIN=$(LED_SERIAL_PIN) \
-	-DRFM69_FREQ=$(RFM69_FREQ) -DRFM69_NET_ID=$(RFM69_NET_ID) \
-	-DRFM69_NODE_ID=$(RFM69_NODE_ID) -DRFM69_IS_HW=$(RFM69_IS_HW) \
-	-DRFM69_ENCRYPT_KEY=$(RFM69_ENCRYPT_KEY) -DVERSION="$(VERSION)" \
-	-DPING_RATE=$(PING_RATE) -DATMEGA_FLASH_MAX=$(ATMEGA_FLASH_MAX)
-
-# linker flags used to generate the main object file
-LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static -Wl,--gc-sections
-
-# linker script used for the above linker step
-LD_SCRIPT 	:= build/eagle.esphttpd.v6.ld
-LD_SCRIPT1	:= build/eagle.esphttpd1.v6.ld
-LD_SCRIPT2	:= build/eagle.esphttpd2.v6.ld
-
-# various paths from the SDK used in this project
-SDK_LIBDIR		= lib
-SDK_LDDIR			= ld
-SDK_INCDIR		= include include/json
-SDK_TOOLSDIR	= tools
-
-# select which tools to use as compiler, librarian and linker
-CC		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-gcc
-AR		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-ar
-LD		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-gcc
-OBJCP := $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-objcopy
-OBJDP := $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-objdump
-
-
-####
-SRC_DIR		:= $(MODULES)
-BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
-
-SDK_LIBDIR	:= $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
-SDK_LDDIR 	:= $(addprefix $(SDK_BASE)/,$(SDK_LDDIR))
-SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
-SDK_TOOLS		:= $(addprefix $(SDK_BASE)/,$(SDK_TOOLSDIR))
-APPGEN_TOOL	:= $(addprefix $(SDK_TOOLS)/,$(APPGEN_TOOL))
-
-SRC		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
-OBJ		:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC)) $(BUILD_BASE)/espfs_img.o
-LIBS		:= $(addprefix -l,$(LIBS))
-APP_AR		:= $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
-USER1_OUT 	:= $(addprefix $(BUILD_BASE)/,$(TARGET).user1.out)
-USER2_OUT 	:= $(addprefix $(BUILD_BASE)/,$(TARGET).user2.out)
-
-INCDIR	:= $(addprefix -I,$(SRC_DIR))
-EXTRA_INCDIR	:= $(addprefix -I,$(EXTRA_INCDIR))
-MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
-
-V ?= $(VERBOSE)
-ifeq ("$(V)","1")
-Q :=
-vecho := @true
+#############################################################
+# Select compile (Windows build removed)
+#############################################################
+# Can we use -fdata-sections?
+ifndef COMPORT
+	ESPPORT = /dev/ftdi_esp
 else
-Q := @
-vecho := @echo
+	ESPPORT = $(COMPORT)
+endif
+CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
+AR			:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-ar
+CC 		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-gcc -I$(PROJ_ROOT)sdk-overrides/include -I$(SDK_ROOT)include
+NM 		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-nm
+CPP 		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-cpp
+OBJCOPY 	:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-objcopy
+BINDIR  	 = ../bin/
+ UNAME_S := $(shell uname -s)
+ ifeq ($(UNAME_S),Linux)
+# LINUX
+ endif
+ UNAME_P := $(shell uname -p)
+ ifeq ($(UNAME_P),x86_64)
+# ->AMD64
+ endif
+ ifneq ($(filter %86,$(UNAME_P)),)
+# ->IA32
+ endif
+ ifneq ($(filter arm%,$(UNAME_P)),)
+# ->ARM
+ endif
+#############################################################
+
+#############################################################
+# Compiler flags
+#############################################################
+CSRCS 	?= $(wildcard *.c)
+ASRCs 	?= $(wildcard *.s)
+ASRCS 	?= $(wildcard *.S)
+SUBDIRS 	?= $(filter-out %build,$(patsubst %/,%,$(dir $(wildcard */Makefile))))
+
+ODIR 		:= .output
+OBJODIR 	:= $(ODIR)/$(TARGET)/$(FLAVOR)/obj
+
+OBJS := $(CSRCS:%.c=$(OBJODIR)/%.o) \
+        $(ASRCs:%.s=$(OBJODIR)/%.o) \
+        $(ASRCS:%.S=$(OBJODIR)/%.o)
+
+DEPS := $(CSRCS:%.c=$(OBJODIR)/%.d) \
+        $(ASRCs:%.s=$(OBJODIR)/%.d) \
+        $(ASRCS:%.S=$(OBJODIR)/%.d)
+
+LIBODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/lib
+OLIBS := $(GEN_LIBS:%=$(LIBODIR)/%)
+
+IMAGEODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/image
+OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
+
+BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
+OBINS := $(GEN_BINS:%=$(BINODIR)/%)
+
+#
+# Note:
+# https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+# If you add global optimize options like "-O2" here
+# they will override "-Os" defined above.
+# "-Os" should be used to reduce code size
+#
+CCFLAGS += 						\
+	-g								\
+	-Wpointer-arith			\
+	-Wundef						\
+	-Werror						\
+	-Wl,-EL						\
+	-fno-inline-functions	\
+	-nostdlib       			\
+	-mlongcalls					\
+	-mtext-section-literals
+#	-Wall
+
+CCFLAGS 					?= -DBUILD_MQTT=$(BUILD_MQTT)
+
+CFLAGS = $(CCFLAGS) $(DEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
+DFLAGS = $(CCFLAGS) $(DDEFINES) $(EXTRA_CCFLAGS) $(STD_CFLAGS) $(INCLUDES)
+
+FLASH_BINS = 0x00000 $(BINDIR)0x00000.bin 0x10000 $(BINDIR)0x10000.bin
+
+ifeq ("$(FLASH_SPIFFS)","yes")
+FLASH_BINS += $(SPIFFS_ADDR) $(BINDIR)spiffy_rom.bin
 endif
 
-ifneq ($(strip $(STA_SSID)),)
-CFLAGS		+= -DSTA_SSID="$(STA_SSID)"
+ifeq ("$(FLASH_INIT_DEFAULT)","yes")
+FLASH_BINS += $(ESP_INIT) $(BINDIR)esp_init_data_default.bin
 endif
 
-ifneq ($(strip $(STA_PASS)),)
-CFLAGS		+= -DSTA_PASS="$(STA_PASS)"
+ifeq ("$(FLASH_BLANK)","yes")
+FLASH_BINS += $(ET_BLANK) $(BINDIR)blank.bin
 endif
 
-ifeq ("$(GZIP_COMPRESSION)","yes")
-CFLAGS		+= -DGZIP_COMPRESSION
-endif
-
-ifeq ("$(CHANGE_TO_STA)","yes")
-CFLAGS          += -DCHANGE_TO_STA
-endif
-
-vpath %.c $(SRC_DIR)
-
-define compile-objects
-$1/%.o: %.c
-	$(vecho) "CC $$<"
-	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
+#############################################################
+# Functions
+#############################################################
+define ShortcutRule
+$(1): .subdirs $(2)/$(1)
 endef
 
-.PHONY: all checkdirs clean webpages.espfs wiflash
+define MakeLibrary
+DEP_LIBS_$(1) = $$(foreach lib,$$(filter %.a,$$(COMPONENTS_$(1))),$$(dir $$(lib))$$(LIBODIR)/$$(notdir $$(lib)))
+DEP_OBJS_$(1) = $$(foreach obj,$$(filter %.o,$$(COMPONENTS_$(1))),$$(dir $$(obj))$$(OBJODIR)/$$(notdir $$(obj)))
+$$(LIBODIR)/$(1).a: $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1)) $$(DEPENDS_$(1))
+	@mkdir -p $$(LIBODIR)
+	$$(if $$(filter %.a,$$?),mkdir -p $$(EXTRACT_DIR)_$(1))
+	$$(if $$(filter %.a,$$?),cd $$(EXTRACT_DIR)_$(1); $$(foreach lib,$$(filter %.a,$$?),$$(AR) xo $$(UP_EXTRACT_DIR)/$$(lib);))
+	$$(AR) ru $$@ $$(filter %.o,$$?) $$(if $$(filter %.a,$$?),$$(EXTRACT_DIR)_$(1)/*.o)
+	$$(if $$(filter %.a,$$?),$$(RM) -r $$(EXTRACT_DIR)_$(1))
+endef
 
-all: echo_version checkdirs $(FW_BASE)/user1.bin $(FW_BASE)/user2.bin
+define MakeImage
+DEP_LIBS_$(1) = $$(foreach lib,$$(filter %.a,$$(COMPONENTS_$(1))),$$(dir $$(lib))$$(LIBODIR)/$$(notdir $$(lib)))
+DEP_OBJS_$(1) = $$(foreach obj,$$(filter %.o,$$(COMPONENTS_$(1))),$$(dir $$(obj))$$(OBJODIR)/$$(notdir $$(obj)))
+$$(IMAGEODIR)/$(1).out: $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1)) $$(DEPENDS_$(1))
+	@mkdir -p $$(IMAGEODIR)
+	$$(CC) $$(LDFLAGS) $$(if $$(LINKFLAGS_$(1)),$$(LINKFLAGS_$(1)),$$(LINKFLAGS_DEFAULT) $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1))) -o $$@
+endef
 
-echo_version:
-	@echo VERSION: $(VERSION)
+$(BINODIR)/%.bin: $(IMAGEODIR)/%.out
+	@mkdir -p $(BINODIR)
+	$(ESPTOOL) elf2image $< -o $(BINDIR) --path $(ESPTOOLMAKE) -fs $(ET_FS) -ff $(ET_FF)
+	@echo "Build Complete!"
 
-$(USER1_OUT): $(APP_AR) $(LD_SCRIPT1)
-	$(vecho) "LD $@"
-	$(Q) $(LD) -L$(SDK_LIBDIR) -T$(LD_SCRIPT1) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
-	@echo Dump  : $(OBJDP) -x $(USER1_OUT)
-	@echo Disass: $(OBJDP) -d -l -x $(USER1_OUT)
-#	$(Q) $(OBJDP) -x $(TARGET_OUT) | egrep espfs_img
+#############################################################
+# Rules base
+# Should be done in top-level makefile only
+#############################################################
+.PHONY: all .subdirs spiffy
 
-$(USER2_OUT): $(APP_AR) $(LD_SCRIPT2)
-	$(vecho) "LD $@"
-	$(Q) $(LD) -L$(SDK_LIBDIR) -T$(LD_SCRIPT2) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
-#	$(Q) $(OBJDP) -x $(TARGET_OUT) | egrep espfs_img
-
-$(FW_BASE):
-	$(vecho) "FW $@"
-	$(Q) mkdir -p $@
-
-$(FW_BASE)/user1.bin: $(USER1_OUT) $(FW_BASE)
-	$(Q) $(OBJCP) --only-section .text -O binary $(USER1_OUT) eagle.app.v6.text.bin
-	$(Q) $(OBJCP) --only-section .data -O binary $(USER1_OUT) eagle.app.v6.data.bin
-	$(Q) $(OBJCP) --only-section .rodata -O binary $(USER1_OUT) eagle.app.v6.rodata.bin
-	$(Q) $(OBJCP) --only-section .irom0.text -O binary $(USER1_OUT) eagle.app.v6.irom0text.bin
-	ls -ls eagle*bin
-	$(Q) COMPILE=gcc PATH=$(XTENSA_TOOLS_ROOT):$(PATH) python $(APPGEN_TOOL) $(USER1_OUT) 2 $(ESP_FLASH_MODE) $(ESP_FLASH_FREQ_DIV) $(ESP_SPI_SIZE)
-	$(Q) rm -f eagle.app.v6.*.bin
-	$(Q) mv eagle.app.flash.bin $@
-	@echo "** user1.bin uses $$(stat -c '%s' $@) bytes of" $(ESP_FLASH_MAX) "available"
-	$(Q) if [ $$(stat -c '%s' $@) -gt $$(( $(ESP_FLASH_MAX) )) ]; then echo "$@ too big!"; false; fi
-
-$(FW_BASE)/user2.bin: $(USER2_OUT) $(FW_BASE)
-	$(Q) $(OBJCP) --only-section .text -O binary $(USER2_OUT) eagle.app.v6.text.bin
-	$(Q) $(OBJCP) --only-section .data -O binary $(USER2_OUT) eagle.app.v6.data.bin
-	$(Q) $(OBJCP) --only-section .rodata -O binary $(USER2_OUT) eagle.app.v6.rodata.bin
-	$(Q) $(OBJCP) --only-section .irom0.text -O binary $(USER2_OUT) eagle.app.v6.irom0text.bin
-	$(Q) COMPILE=gcc PATH=$(XTENSA_TOOLS_ROOT):$(PATH) python $(APPGEN_TOOL) $(USER2_OUT) 2 $(ESP_FLASH_MODE) $(ESP_FLASH_FREQ_DIV) $(ESP_SPI_SIZE)
-	$(Q) rm -f eagle.app.v6.*.bin
-	$(Q) mv eagle.app.flash.bin $@
-	$(Q) if [ $$(stat -c '%s' $@) -gt $$(( $(ESP_FLASH_MAX) )) ]; then echo "$@ too big!"; false; fi
-
-$(APP_AR): $(OBJ)
-	$(vecho) "AR $@"
-	$(Q) $(AR) cru $@ $^
-
-checkdirs: $(BUILD_DIR)
-
-$(BUILD_DIR):
-	$(Q) mkdir -p $@
-
-wiflash: all
-	./wiflash $(ESP_HOSTNAME) $(FW_BASE)/user1.bin $(FW_BASE)/user2.bin
-
-baseflash: all
-	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(ESPBAUD) write_flash 0x01000 $(FW_BASE)/user1.bin
-
-flash: all
-	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(ESPBAUD) write_flash -fs $(ET_FS) -ff $(ET_FF) \
-	  0x00000 "$(SDK_BASE)/bin/boot_v1.4(b1).bin" 0x01000 $(FW_BASE)/user1.bin \
-	  $(ET_BLANK) $(SDK_BASE)/bin/blank.bin
-
-tools/$(HTML_COMPRESSOR):
-	$(Q) mkdir -p tools
-  ifeq ($(OS),Windows_NT)
-	cd tools; wget --no-check-certificate https://github.com/yui/yuicompressor/releases/download/v2.4.8/$(YUI_COMPRESSOR) -O $(YUI_COMPRESSOR)
-	cd tools; wget --no-check-certificate https://htmlcompressor.googlecode.com/files/$(HTML_COMPRESSOR) -O $(HTML_COMPRESSOR)
-  else
-	cd tools; wget https://github.com/yui/yuicompressor/releases/download/v2.4.8/$(YUI_COMPRESSOR)
-	cd tools; wget https://htmlcompressor.googlecode.com/files/$(HTML_COMPRESSOR)
-  endif
-
-ifeq ("$(COMPRESS_W_HTMLCOMPRESSOR)","yes")
-$(BUILD_BASE)/espfs_img.o: tools/$(HTML_COMPRESSOR)
+ifndef PDIR
+# targets for top level only
+OSPIFFY=spiffy spiffy_img.o
 endif
 
-# fw/
-# $(Q) cp -r fw/*.bin html_compressed;
-$(BUILD_BASE)/espfs_img.o: html/ html/wifi/ espfs/mkespfsimage/mkespfsimage
-	$(Q) rm -rf html_compressed; mkdir html_compressed; mkdir html_compressed/wifi;
-	$(Q) cp -r html/*.ico html_compressed;
-	$(Q) cp -r html/*.css html_compressed;
-	$(Q) cp -r html/*.js html_compressed;
-	$(Q) cp -r html/wifi/*.png html_compressed/wifi;
-	$(Q) cp -r html/wifi/*.js html_compressed/wifi;
-ifeq ("$(COMPRESS_W_HTMLCOMPRESSOR)","yes")
-	$(Q) echo "Compression assets with htmlcompressor. This may take a while..."
-		$(Q) java -jar tools/$(HTML_COMPRESSOR) \
-		-t html --remove-surrounding-spaces max --remove-quotes --remove-intertag-spaces \
-		-o $(abspath ./html_compressed)/ \
-		$(HTML_PATH)head- \
-		$(HTML_PATH)*.html
-	$(Q) java -jar tools/$(HTML_COMPRESSOR) \
-		-t html --remove-surrounding-spaces max --remove-quotes --remove-intertag-spaces \
-		-o $(abspath ./html_compressed)/wifi/ \
-		$(WIFI_PATH)*.html
-	$(Q) echo "Compression assets with yui-compressor. This may take a while..."
-	$(Q) for file in `find html_compressed -type f -name "*.js"`; do \
-			java -jar tools/$(YUI_COMPRESSOR) $$file -o $$file; \
-		done
-	$(Q) for file in `find html_compressed -type f -name "*.css"`; do \
-			java -jar tools/$(YUI_COMPRESSOR) $$file -o $$file; \
-		done
-endif
-ifeq (,$(findstring mqtt,$(MODULES)))
-	$(Q) rm -rf html_compressed/mqtt.html
-	$(Q) rm -rf html_compressed/mqtt.js
-endif
-	$(Q) for file in `find html_compressed -type f -name "*.htm*"`; do \
-		cat html_compressed/head- $$file >$${file}-; \
-		mv $$file- $$file; \
-	done
-	$(Q) rm html_compressed/head-
-	$(Q) cd html_compressed; find . \! -name \*- | ../espfs/mkespfsimage/mkespfsimage > ../build/espfs.img; cd ..;
-	$(Q) ls -sl build/espfs.img
-	$(Q) cd build; $(OBJCP) -I binary -O elf32-xtensa-le -B xtensa --rename-section .data=.espfs \
-			espfs.img espfs_img.o; cd ..
-
-# edit the loader script to add the espfs section to the end of irom with a 4 byte alignment.
-# we also adjust the sizes of the segments 'cause we need more irom0
-# in the end the only thing that matters wrt size is that the whole shebang fits into the
-# 236KB available (in a 512KB flash)
-ifeq ("$(FLASH_SIZE)","512KB")
-build/eagle.esphttpd1.v6.ld: $(SDK_LDDIR)/eagle.app.v6.new.512.app1.ld
-	$(Q) sed -e '/\.irom\.text/{' -e 'a . = ALIGN (4);' -e 'a *(.espfs)' -e '}'  \
-			-e '/^  irom0_0_seg/ s/2B000/38000/' \
-			$(SDK_LDDIR)/eagle.app.v6.new.512.app1.ld >$@
-build/eagle.esphttpd2.v6.ld: $(SDK_LDDIR)/eagle.app.v6.new.512.app2.ld
-	$(Q) sed -e '/\.irom\.text/{' -e 'a . = ALIGN (4);' -e 'a *(.espfs)' -e '}'  \
-			-e '/^  irom0_0_seg/ s/2B000/38000/' \
-			$(SDK_LDDIR)/eagle.app.v6.new.512.app2.ld >$@
-else
-build/eagle.esphttpd1.v6.ld: $(SDK_LDDIR)/eagle.app.v6.new.1024.app1.ld
-	$(Q) sed -e '/\.irom\.text/{' -e 'a . = ALIGN (4);' -e 'a *(.espfs)' -e '}'  \
-			-e '/^  irom0_0_seg/ s/6B000/7C000/' \
-			$(SDK_LDDIR)/eagle.app.v6.new.1024.app1.ld >$@
-build/eagle.esphttpd2.v6.ld: $(SDK_LDDIR)/eagle.app.v6.new.1024.app2.ld
-	$(Q) sed -e '/\.irom\.text/{' -e 'a . = ALIGN (4);' -e 'a *(.espfs)' -e '}'  \
-			-e '/^  irom0_0_seg/ s/6B000/7C000/' \
-			$(SDK_LDDIR)/eagle.app.v6.new.1024.app2.ld >$@
-endif
-
-espfs/mkespfsimage/mkespfsimage: espfs/mkespfsimage/
-	$(Q) $(MAKE) -C espfs/mkespfsimage GZIP_COMPRESSION="$(GZIP_COMPRESSION)"
-
-release: all
-	$(Q) rm -rf release; mkdir -p release/esp-rfm69-$(BRANCH)
-	$(Q) egrep -a 'esp-rfm69 [a-z0-9.]+ - 201' $(FW_BASE)/user1.bin | cut -b 1-80
-	$(Q) egrep -a 'esp-rfm69 [a-z0-9.]+ - 201' $(FW_BASE)/user2.bin | cut -b 1-80
-	$(Q) cp $(FW_BASE)/user1.bin $(FW_BASE)/user2.bin $(SDK_BASE)/bin/blank.bin \
-		   "$(SDK_BASE)/bin/boot_v1.4(b1).bin" wiflash release/esp-rfm69-$(BRANCH)
-	$(Q) tar zcf esp-rfm69-$(BRANCH).tgz -C release esp-rfm69-$(BRANCH)
-	$(Q) echo "Release file: esp-rfm69-$(BRANCH).tgz"
-	$(Q) rm -rf release
+all: .subdirs $(OSPIFFY) $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
 clean:
-	$(Q) rm -f $(APP_AR)
-	$(Q) rm -f $(TARGET_OUT)
-	$(Q) find $(BUILD_BASE) -type f | xargs rm -f
-	$(Q) make -C espfs/mkespfsimage/ clean
-	$(Q) rm -rf $(FW_BASE)
-	$(Q) rm -f webpages.espfs
-ifeq ("$(COMPRESS_W_HTMLCOMPRESSOR)","yes")
-	$(Q) rm -rf html_compressed
+	$(Q) $(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clean;)
+	$(Q) $(RM) -r $(ODIR)/$(TARGET)/$(FLAVOR)
+
+clobber: $(SPECIAL_CLOBBER)
+	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) clobber;)
+	$(RM) -r $(ODIR)
+
+flash:
+ifndef PDIR
+	$(Q) $(MAKE) -C ./app flash
+else
+	$(ESPTOOL) --port $(ESPPORT) --baud $(ESPBAUD) write_flash -fs $(ET_FS) \
+		-ff $(ET_FF) $(FLASH_BINS)
 endif
 
-$(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
+
+.subdirs:
+	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) $(MAKEPDIR) -C $(d);)
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),clobber)
+ifdef DEPS
+sinclude $(DEPS)
+endif
+endif
+endif
+
+$(OBJODIR)/%.o: %.c
+	@mkdir -p $(OBJODIR);
+	$(CC) $(if $(findstring $<,$(DSRCS)),$(DFLAGS),$(CFLAGS)) $(COPTS_$(*F)) -o $@ -c $<
+
+$(OBJODIR)/%.d: %.c
+	@mkdir -p $(OBJODIR);
+	@echo DEPEND: $(CC) -M $(CFLAGS) $<
+	@set -e; rm -f $@; \
+	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+$(OBJODIR)/%.o: %.s
+	@mkdir -p $(OBJODIR);
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(OBJODIR)/%.d: %.s
+	@mkdir -p $(OBJODIR); \
+	set -e; rm -f $@; \
+	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+$(OBJODIR)/%.o: %.S
+	@mkdir -p $(OBJODIR);
+	$(CC) $(CFLAGS) -D__ASSEMBLER__ -o $@ -c $<
+
+$(OBJODIR)/%.d: %.S
+	@mkdir -p $(OBJODIR); \
+	set -e; rm -f $@; \
+	$(CC) -M $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\.o\)[ :]*,$(OBJODIR)/\1 $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+$(foreach lib,$(GEN_LIBS),$(eval $(call ShortcutRule,$(lib),$(LIBODIR))))
+$(foreach image,$(GEN_IMAGES),$(eval $(call ShortcutRule,$(image),$(IMAGEODIR))))
+$(foreach bin,$(GEN_BINS),$(eval $(call ShortcutRule,$(bin),$(BINODIR))))
+$(foreach lib,$(GEN_LIBS),$(eval $(call MakeLibrary,$(basename $(lib)))))
+$(foreach image,$(GEN_IMAGES),$(eval $(call MakeImage,$(basename $(image)))))
+
+
+utils/$(HTML_COMPRESSOR):
+	$(Q) mkdir -p ${SPFY_DIR}utils
+	$(Q) cd ${SPFY_DIR}utils; wget -nc https://github.com/yui/yuicompressor/releases/download/v2.4.8/$(YUI_COMPRESSOR)
+	$(Q) cd ${SPFY_DIR}utils; wget -nc https://htmlcompressor.googlecode.com/files/$(HTML_COMPRESSOR)
+
+ifeq ("$(COMPRESS_W_HTMLCOMPRESSOR)","yes")
+spiffy_img.o: utils/$(HTML_COMPRESSOR)
+endif
+
+spiffy_img.o: ${SPFY_DIR}html/ ${SPFY_DIR}html/wifi/ ${SPFY_DIR}spiffy/build/spiffy
+	$(Q) rm -rf ${SPFY_DIR}html_compressed; mkdir ${SPFY_DIR}html_compressed;
+	$(Q) cp -r ${SPFY_DIR}html/*.css ${SPFY_DIR}html_compressed;
+	$(Q) cp -r ${SPFY_DIR}html/*.js ${SPFY_DIR}html_compressed;
+	$(Q) cp -r ${SPFY_DIR}html/wifi/*.png ${SPFY_DIR}html_compressed;
+	$(Q) cp -r ${SPFY_DIR}html/wifi/*.js ${SPFY_DIR}html_compressed;
+	$(Q) cp -r ${SPFY_DIR}html/*.ico ${SPFY_DIR}html_compressed;
+ifeq ("$(COMPRESS_W_HTMLCOMPRESSOR)","yes")
+	$(Q) echo "Compression assets with htmlcompressor..."
+		$(Q) java -jar ${SPFY_DIR}utils/$(HTML_COMPRESSOR) \
+		-t html --remove-surrounding-spaces max --remove-quotes --remove-intertag-spaces \
+		-o $(abspath $(SPFY_DIR)html_compressed)/ \
+		$(HTML_PATH) \
+		$(HTML_PATH)*.html
+	$(Q) java -jar ${SPFY_DIR}utils/$(HTML_COMPRESSOR) \
+		-t html --remove-surrounding-spaces max --remove-quotes --remove-intertag-spaces \
+		-o $(abspath $(SPFY_DIR)html_compressed)/ \
+		$(WIFI_PATH)*.html
+	$(Q) echo "Compression assets with yui-compressor..."
+	$(Q) for file in `find ${SPFY_DIR}html_compressed -type f -name "*.js"`; do \
+			java -jar ${SPFY_DIR}utils/$(YUI_COMPRESSOR) $$file --line-break 0 -o $$file; \
+		done
+	$(Q) for file in `find ${SPFY_DIR}html_compressed -type f -name "*.css"`; do \
+			java -jar ${SPFY_DIR}utils/$(YUI_COMPRESSOR) $$file -o $$file; \
+		done
+endif
+	$(Q) for file in `find ${SPFY_DIR}html_compressed -type f -name "*.htm-"`; do \
+		mv $$file $$file; \
+	done
+	$(Q) cd ${SPFY_DIR}html_compressed; find . \! -name \*- | ${SPFY_DIR}spiffy/build/spiffy > ${SPFY_DIR}build/spiff_rom.bin;
+	$(Q) cd ${SPFY_DIR}html_compressed;
+	$(Q) cp ${SPFY_DIR}html_compressed/spiffy_rom.bin ${PROJ_ROOT}/bin/spiffy_rom.bin
+
+spiffy:
+	$(Q) $(MAKE) -C ${SPFY_DIR}spiffy
+
+mkdirs:
+	-@${SPFY_MKDIR} ${SPFY_BLD_DIR}
+
+clean-spiffy:
+	@echo ... removing build files in ${SPFY_DIR}
+	@rm -f ${SPFY_DIR}spiffy/build/*.o
+	@rm -f ${SPFY_DIR}spiffy/build/*.d
+	@rm -f ${SPFY_DIR}spiffy/build/spiffy
+	@rm -f ${SPFY_DIR}*.o
+	@rm -f ${SPFY_DIR}*.d
+	@rm -f ${SPFY_DIR}*.elf
+
+#############################################################
+# Recursion Magic - Don't touch this!!
+#
+# Each subtree potentially has an include directory
+#   corresponding to the common APIs applicable to modules
+#   rooted at that subtree. Accordingly, the INCLUDE PATH
+#   of a module can only contain the include directories up
+#   its parent path, and not its siblings
+#
+# Required for each makefile to inherit from the parent
+#############################################################
+
+INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET)
+PDIR := ../$(PDIR)
+sinclude $(PDIR)Makefile

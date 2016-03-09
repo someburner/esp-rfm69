@@ -1,0 +1,65 @@
+#sp-fw h2 {
+  font: 400 25px/1.5 Helvetica, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+#sp-fw ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+#sp-fw li {
+  font: 200 20px/1.5 Helvetica, Verdana, sans-serif;
+  border-bottom: 1px solid #ccc;
+}
+
+#sp-fw li:last-child {
+  border: none;
+}
+
+#sp-fw li a {
+  text-decoration: none;
+  color: #0d0d48;
+  display: block;
+  width: 16em;
+
+  -webkit-transition: font-size 0.3s ease, background-color 0.3s ease;
+  -moz-transition: font-size 0.3s ease, background-color 0.3s ease;
+  -o-transition: font-size 0.3s ease, background-color 0.3s ease;
+  -ms-transition: font-size 0.3s ease, background-color 0.3s ease;
+  transition: font-size 0.3s ease, background-color 0.3s ease;
+}
+
+#sp-fw li:hover {
+  font-size: 30px;
+  background: #f6f6f6;
+}
+
+#sp-fw li.fwsel {
+  background: rgba(41, 0, 255, 0.28);
+  height: 3em;
+}
+
+#sp-fw li.fwsel label.sellabel {
+    display:inline-block;
+    font-size: .8em;
+}
+
+#sp-fw li label.sellabel {
+    display: none;
+}
+
+#fwul-span label,
+#fwul-span a.btn {
+    margin: 2em;
+    display: inline-block;
+    width: 2em;
+    float: left;
+    position: relative;
+    margin-left: 3px;
+    text-align: center;
+    padding: 20px;
+    left: 45%;
+}

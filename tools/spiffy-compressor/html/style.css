@@ -1,0 +1,191 @@
+.byday {
+    margin: 60px 0 0 40px;
+    background-color: #ffffff;
+    font: 14px normal Arial, Helvetica, sans-serif;
+}
+
+.bynight {
+    margin: 60px 0 0 40px;
+    background-color: #23232e;
+    font: 14px normal Arial, Helvetica, sans-serif;
+}
+
+.animated {
+    -webkit-animation: showSlowlyElement 700ms;
+    animation: showSlowlyElement 700ms;
+}
+
+/* mincss customizations */
+.btn.disabled, .btn[disabled] {
+    cursor: default;
+    background-image: none;
+    opacity: 0.65;
+    filter: alpha(opacity=65);
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+    color: #333;
+    background-color: #E6E6E6;
+}
+
+#btn-nav,
+#btn-nav a:hover,
+#btn-nav .a {
+    color:#ffffff;
+    background-color:#0085e5;
+}
+
+#btn-nav a {
+    color:#000203;
+    background-color:#0085e5;
+}
+
+span[id|=sp] .row {
+    margin: 0 1em;
+}
+
+/* Text console */
+.console {
+	background-color: #fff3ee;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	border: px solid #ffffff;
+	color: #2b7b2b;
+    min-width: 100%;
+    max-width: 100%;
+    max-height: 25vh;
+	overflow: scroll;
+}
+
+.console a {
+	color: #66ff66;
+}
+a.btn {
+    font-size: 100%;
+}
+
+a.cbtn {
+    margin-left: 1em;
+}
+
+a.bbtn {
+    float: right;
+}
+
+a.nbtns {
+    font-size: 80%;
+    margin-right: .5em;
+}
+
+h3.ch3 {
+    float: left;
+}
+
+/* wifi AP selection form */
+#aps  a{
+    z-index: auto;
+}
+
+#aps label div {
+	display: inline-block;
+	margin: 0em 0.2em;
+}
+fieldset.radios {
+	border: none;
+	padding-left: 0px;
+}
+fieldset fields {
+	clear: both;
+}
+
+.lock-icon {
+	background-image: url("/icons.png");
+	background-color: transparent;
+	width: 32px;
+	height: 32px;
+	display: inline-block;
+}
+
+
+
+#messages {
+	position: fixed;
+	left: 25%;
+	width: 50%;
+	top: 10;
+	z-index: 200;
+	font-size: 110%;
+	text-align: center;
+}
+#warning {
+	background-color: #933;
+	color: #fcc;
+	padding: 0.1em 0.4em;
+    margin: 2.5em;
+}
+#notification {
+	background-color: #693;
+	color: #cfc;
+	padding: 0.1em 0.4em;
+    margin: 2.5em;
+}
+
+#spinner {
+	position: absolute;
+	right: 10%;
+	top: 20;
+	z-index: 1000;
+}
+.spinner {
+  height: 50px;
+  width: 50px;
+  -webkit-animation: rotation 1s infinite linear;
+  -moz-animation: rotation 1s infinite linear;
+  -o-animation: rotation 1s infinite linear;
+  animation: rotation 1s infinite linear;
+  border-left: 10px solid rgba(204, 51, 0, 0.15);
+  border-right: 10px solid rgba(204, 51, 0, 0.15);
+  border-bottom: 10px solid rgba(204, 51, 0, 0.15);
+  border-top: 10px solid rgba(204, 51, 0, 0.8);
+  border-radius: 100%;
+}
+.spinner-small {
+	display: inline-block;
+	height: 1em;
+	width: 1em;
+	border-width: 4px;
+}
+
+@-webkit-keyframes rotation {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(359deg);
+  }
+}
+@-moz-keyframes rotation {
+  from {
+    -moz-transform: rotate(0deg);
+  }
+  to {
+    -moz-transform: rotate(359deg);
+  }
+}
+@-o-keyframes rotation {
+  from {
+    -o-transform: rotate(0deg);
+  }
+  to {
+    -o-transform: rotate(359deg);
+  }
+}
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}

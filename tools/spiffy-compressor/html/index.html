@@ -1,0 +1,240 @@
+<html>
+<head>
+   <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>ESP-rfm69 Dev</title>
+    <script src="head.load.min.js"></script>
+    <script>
+        head.load(["ki.min.js", "ki-ex.js", "style.css", "min.css"], function() {});
+        var partialList = [], fwlist = [], fwszlist = [];
+        var scanTimeout = null;
+        var consrep = true, rfmrep = true, wifirep = true;
+      //   var splist = ['index', 'wifi', 'con', 'fw', 'fs']
+    </script>
+</head>
+<nav class="nav" tabindex="-1" onclick="this.focus()" style="z-index:99; margin: -60px 0 0 -40px; position:fixed; width:100%">
+    <div class="container">
+        <a class="pagename current" href="#">Menu</a>
+        <span id="nav-list"></span>
+    </div>
+</nav>
+<body class="byday">
+    <div id="spinner" class="spinner" hidden=""></div>
+    <div id="messages">
+        <div id="warning" hidden=""></div>
+        <div id="notification" hidden=""></div>
+    </div>
+    <script>
+        var scan_opt = 0;
+        var cur_page = null;
+
+       head.ready("ki-ex.js", function() {
+        $.ajax('/menu', function(resp) {
+            var r = JSON.parse(resp);
+            console.log(r);
+            var nl = $.getId('nav-list');
+            for (var i = 0; i < r.menu.length; i += 2) {
+                partialList.push(r.menu[i + 1])
+                var ts = $.mk('a')
+                ts.id = 'nav-' + r.menu[i + 1].split('/')[1].split('.')[0];
+                ts.href = '#';
+                ts.innerHTML = r.menu[i];
+                nl.appendChild(ts);
+            }
+            var ts2 = $.mk('a')
+            ts2.id = 'nav-fs';
+            ts2.innerHTML = 'File System';
+            ts2.href = '#';
+            nl.appendChild(ts2);
+
+            $('span a[id|=nav]').each(function(elem, i) {
+                $(elem).on('click', function() {
+                    var sel = elem.id.split('-')[1];
+
+                    if (sel == 'fs') {
+                        head.load(['filesys.css', 'filesys.js', 'upload.js']);
+                        head.ready('filesys.js', function() {
+                        	$('body').attr('class', 'bynight');
+                        });
+                        /* Load uploader script */
+                        head.ready('upload.js', function() {
+                            $('#fs-ul-btn').on('click', function() {
+								new FDSock(this,"ws://"+window.location.host+":8088");
+                            });
+                        });
+                    } else {
+                        $('body').attr('class', 'byday');
+                    }
+                    if (sel == 'wifi') {
+                        wifirep = true;
+                        head.load("wifi.js");
+                        head.ready("wifi.js", function() {
+                            scanAPs(10000, true);
+                        });
+                    } else {
+                        wifirep = false;
+                    }
+                    if (sel == 'console') {
+                        consrep = true;
+                        rfmrep = true;
+                        head.load("console.js");
+                        head.ready("console.js", function() {
+                            console.log('console loaded')
+                            fetchText(2000, true);
+                            rfmResult(3000, true);
+                        });
+                    } else {
+                        consrep = false;
+                        rfmrep = false;
+                    }
+                    if (sel == 'fw') {
+                        head.load(["fw.css", "fw.js"]);
+                        head.ready("fw.js", function() {
+                            console.log('fw panel loaded');
+                        });
+                    }
+
+                    $('span[id|=sp').hide();
+                    $('span[id=sp-'+sel+']').show();
+
+                    cur_page = sel;
+                })
+            });
+            v = $("#version");
+            if (v != null) {
+                v.html(r.version)
+            }
+           });
+        });
+
+        function showWarning(text) {
+            var el = $("#warning");
+            el.html(text);
+            el.removeAttr('hidden');
+            window.setTimeout(hideWarning, 2000);
+        }
+
+        function hideWarning() {
+            el = $("#warning").attr('hidden', '');
+        }
+
+        var notifTimeout = null;
+        var sn = function(text) {
+            var el = $("#notification");
+            el.html(text);
+            el.removeAttr('hidden');
+            if (notifTimeout != null) clearTimeout(notifTimeout);
+            notifTimout = setTimeout(function() {
+                el.attr('hidden', '');
+                notifTimout = null;
+            }, 4000);
+        }
+    </script>
+
+<span id="sp-index">
+    <div class="row">
+        <h2 class="byday" id="version"></h2>
+    </div>
+</span>
+<span id="sp-console" style="display: none;">
+    <label id="rfm-heap" for="free-heap"></label>
+    <h2 class="byday">Radio Console</h2><a id="free-heap"></a>
+    <div class="row">
+        <div class="col c6">
+            <input id="send-txt" style="width:50%" type="text" class="smooth" placeholder="Enter text to send">
+            <input id="node-id" style="width:15%" type="text" class="smooth" placeholder="Node#">
+            <a id="send-btn" href="#" style="font-size:100%" class="btn btn-sm btn-b smooth">Send</a>
+            <label><input type="checkbox" id="ackbox"> Request ACK</label>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col c6">
+            <textarea class="console" id="console" rows="10"></textarea>
+        </div>
+        <div class="col c1">
+            <a id="clear-button" href="#" class="btn btn-sm btn-c smooth cbtn">Clear</a>
+            <a id="output-button" class="btn btn-sm btn-d smooth cbtn" href="#">Out Toggle</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col c3">
+            <h3 class="ch3">Latest Radio Info</h3>
+            <a id="rfm-reset" class="btn btn-sm btn-a smooth bbtn">Reset Pks</a>
+            <table id="rfm-table2" class="table rtbl">
+            <tbody>
+                <tr><td>Test Count</td><td id="rfm-batt">0</td></tr>
+                <tr><td>Radio RSSI</td><td id="rfm-rssi"></td></tr>
+                <tr><td>Node Battery Level</td><td id="rfm-ct"></td></tr>
+                <tr><td># Tx</td><td id="rfm-tx"></td></tr>
+                <tr><td># Rx</td><td id="rfm-rx"></td></tr>
+            </tbody>
+            </table>
+            <a id="radio-refresh-button" href="#" class="btn btn-sm btn-a smooth bbtn">Refresh</a>
+            <h3 class="ch3">Moteino</h3><div id="radio-spinner" style="float:right;" class="spinner spinner-small"></div>
+            <table id="rfm-table1" class="table">
+            <tbody>
+                <tr><td>Node Link</td><td id="radio-link"></td></tr>
+                <tr><td>Node ID</td><td id="radio-id"></td>
+                </tr><tr><td>Frequency</td><td id="radio-freq"></td></tr>
+            </tbody>
+            </table>
+        </div>
+        <div class="col c3" style="margin-left:1em">
+            <h3>Power Strip</h3>
+            <span id="pwr-btns"></span>
+        </div>
+    </div>
+</span>
+<span id="sp-wifi" style="display: none;">
+    <h2 class="byday">WiFi Setup</h2>
+
+    <form action="#" id="wifiform" class="smooth">
+    <legend>To connect to a WiFi network, please select one of the detected networks,
+    enter the password, and hit the connect button...</legend>
+    <label>Network List</label>
+
+    <div id="aps">Scanning... <div class="spinner spinner-small"></div></div>
+    <label>WiFi password, if applicable:</label>
+    <input id="wifi-passwd" type="text" name="passwd" placeholder="password">
+    <button id="connect-button" type="submit" class="btn btn-a">Connect!</button>
+    <button id="dc-btn" type="button" style="background-color:#d97070" class="btn btn-c">Disconnect</button>
+    </form>
+</span>
+<span id="sp-fw" style="display: none;">
+    <div class="row">
+        <div class="col c5">
+            <h2>Choose a firmware Image</h2>
+            <ul id="fw-list"></ul>
+        </div>
+        <div class="col c5">
+            <span id="fwul-span">
+            <label id="fwlabel"></label>
+            <a id="fwul-btn" onClick="fwConfirm();" class="btn btn-a btn-sm smooth" disabled>>></a>
+            </span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col c5">
+        <span id="fwid-span">
+        <h2>Enter Node ID</h2>
+        <input id="fw-idtxt" style="width:20%" type="text" class="smooth" placeholder="Node#">
+        </span>
+        </div>
+    </div>
+</span>
+<span id="sp-fs" style="display: none;">
+	<div class="dropzone"></div>
+	<button id="fs-ul-btn" class="btn" wsUrl="">uploader</button>
+    <div class="filemanager">
+    <div class="search">
+        <input id="s1" type="search" placeholder="Find a file..">
+    </div>
+    <div class="breadcrumbs"></div>
+    <ul class="data"></ul>
+    <div class="nothingfound">
+        <div class="nofiles"></div>
+        <span>No files here.</span>
+    </div>
+    </div>
+</span>
+</body>
+</html>

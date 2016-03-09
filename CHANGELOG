@@ -1,0 +1,128 @@
+
+##Changelog
+-----------------------
+
+`0.1.2:`
+
+* Fixed fs wrapper APIs: naming issues, pointer reference issues, read overflow
+* Cleaned and updated RFM69 driver comments
+* Revert RFM69 driver back to a single static pointer. It seemed useless to pass
+  the pointer around since it's only possible for the chip to operate in one
+  mode at any point in time. If multiple "instances" are required, we should
+  write methods to switch the necessary config registers and/or buffers, which
+  can be done by attaching/detaching other pointers in the RFM_Handle struct.
+* Ditched dynamic mem for RFM in favor of ringbuffer, using cbuff.c
+* Added FW html page - populates with ".bin " files found on SPIFFS
+* Massive re-write of OTA updates with ringbuffer and SPIFFS. Confirmed working.
+* Fixed ACK responses. Still need to decide exactly how to deal with them,
+  perhaps just use a separate outbuffer
+* Better/simpler handling of RX buffer in rfm_parser.c
+* Swapped in espressif SSL patch
+
+`0.1.1:`
+
+* Revamped HTML:
+    - Switched from pureCSS to mincss.
+    - Now uses head.js to load JS/CSS as needed, injects into <spans>
+    - Added filesystem module. Currently only views and downloads.
+    - Using ki.js + ki.extend.js for minimalist jQuery-like methods.
+* Began implementing wrappers for SPIFFS: upload, delete, rename
+* Fixed headjs loads
+* Fixed fs CSS, using proper query selectors now
+* Scrapped CGI upload in favor of easier/cleaner websocket method
+* Added file uploader dropzone.
+
+`0.1.0:`
+
+* Further MQTT<-> server integration, implemented basic parse calls
+* Stable MQTT pub, sub, queuing. Fixed disconn/reccon/conn issues + queuing
+* Started bitwise lib in /utils
+* Set RFM69 Rx queue to off by default. Tx queue still in place
+* Updated flash layout, SPIFFS configuration
+
+`0.0.9:`
+
+* Update to NON-OS SDK v1.5.2
+* Updated http_parser modules to latest, added ICACHE_RODATA_ATTR to 2 arrays
+* Updated cJSON to match most recent github repo
+* Added a couple missing MQTT updates
+* Makefile: now easier to choose what bins to flash
+* Re-work of MQTT + cJSON frame creation, 90% stable.
+* Compiles higher warn levels on dns, crypto, json, rfm, util, libc dirs
+* Added console.html button to show raw RFM69 packet data.
+* Removed unncessary spi_transaction params
+
+`0.0.8:`
+
+* Removed unneccessary ICACHE_FLASH_ATTR: See [this issue on github](https://github.com/nodemcu/nodemcu-firmware/pull/504).
+* Added ICACHE_RAM_ATTR where appropriate
+* Began compiling modules to gnu11 standard: http, platform, smart
+* Major re-work of console CGI. Now uses 1 route instead of 6
+* Added basic MQTT Support
+    - Working pub-sub, interacts with RFM69
+    - Began integrating device API (MQTT wrappers + cJSON)
+    - Datetime switched to Epoch, c_time.c/h left commented just in case
+
+`0.0.7:`
+
+* Finished re-working RFM69 driver. Almost all parameters stored in a single
+   struct. Single timer. Much easier to add/remove functionality.
+* Updated SPIFFS for two FS's. One uses fs_method(), other uses dynfs_method()
+* cgi.c now uses new SPIFFS open by page index.
+* A few updates from NodeMCU fw.
+* Put text input box back into console.html
+* cleaned up the Makefile a decent bit
+
+`0.0.6:`
+
+* Major SPIFFS updates
+    - Added remove methods
+    - Created SQTAIL list in flash_fs.c for easier/faster static file access
+    - Improved cgi.c reads and fixed open/close file descriptor issues
+* cgi.h now uses flags to determine readonly, gzip, etc
+* New files generated after flash can be read with the normal CGI
+* Simplified cgi.c with SPIFFS check macros
+* Now using esp-iot-sdk 1.5.1
+* Small updates from NodeMCU
+* Now using esp-iot-sdk 1.5.1
+
+`0.0.5:`
+
+* Fixed SPIFFS getting overwritten on re-flash
+* Added status.c to handle WiFi/RFM69 status LEDs
+* Fixed non-gzipped filenumber
+* Cleaned up cgi_flash.c, console.js
+
+`0.0.4:`
+
+* Fixed DNS and captive portal issues
+* Added cgi_flash.c to handle multipart/form-data uploads (working)
+* Changed cgi.c to call different param based on wifi mode
+* Verified HTTP client working
+* Added disconnect button to wifi.html
+* Made individual debug ifdefs for http files
+* Split to development branch
+
+
+`0.0.3:`
+
+* Working config file in SPIFFS
+* Fixed on OSHPark boards, needed another couple resistors. Updated schematic
+
+
+`0.0.2:`
+
+* Fairly stable
+* Completed SPIFFS implementation
+* Working with CGI filesystem
+* Spiffy-compressor with gzip and html shrinking
+* Cleaned up excess NodeMCU stuff
+* ESP-GINX updated for 1.5.0
+* SPIFFS 3.3 working
+
+
+`0.0.1:`
+
+* Updated README
+* Basic functionality almost working
+* Unstable

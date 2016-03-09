@@ -1,0 +1,4 @@
+*.output*
+*mapfile*
+!.gitignore
+*.tmp.section*
