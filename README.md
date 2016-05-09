@@ -162,7 +162,7 @@ If platformIO is installed, serial monitor can be invoked as such
 (replace /dev/ftdi_esp with your com port):
 
 ```
-platformio serialports monitor -b 115200 -p /dev/ftdi_esp --echo
+platformio serialports monitor -b 115200 -p /dev/ftdi_esp
 ```
 
 ##MQTT

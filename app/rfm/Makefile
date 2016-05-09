@@ -29,7 +29,7 @@ EXTRA_CCFLAGS += \
 	-DPING_RATE=$(PING_RATE) -DFIRMWARE_SIZE=$(ESP_FLASH_MAX) \
 	-DRFM69_NODE_ID=$(RFM69_NODE_ID) -DRFM69_NET_ID=$(RFM69_NET_ID) \
 	-DRFM69_FREQ=$(RFM69_FREQ) -DRFM69_DEV_ID=$(RFM69_DEV_ID) \
-	-DATMEGA_FLASH_MAX=$(ATMEGA_FLASH_MAX)
+	-DMQTT_ENABLE=$(MQTT_ENABLE)
 
 #############################################################
 # Recursion Magic - Don't touch this!!

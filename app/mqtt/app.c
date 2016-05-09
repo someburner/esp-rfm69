@@ -7,23 +7,19 @@
 #include "espconn.h"
 
 #include "user_config.h"
-#include "../util/bitwise_utils.h"
+#include "util/bitwise_utils.h"
 
 #include "mqtt.h"
 #include "mqtt_msg.h"
 #include "mqtt_api.h"
 
+// #define USER_TEST_MSG
+
 static MQTT_Client mqtt_client;
 static USER_MQTT_T * user_mqtt = NULL;
 
-static char * bridge_sub = NULL;
-static char * device_sub = NULL;
-
-static char * bridge_pub = NULL;
-static char * log_pub = NULL;
-static uint8_t sub_offset = 0;
-
 static os_timer_t mqtt_timer;
+static bool isConnected = false;
 
 #ifdef USER_TEST_MSG
 static os_timer_t testmq_timer;
@@ -33,16 +29,9 @@ static char testmsg[] = "{\"message\":\"test1234\",\"severity\":\"INFO\"}";
 extern uint8_t wifiStatus_mq;
 extern uint8_t lastwifiStatus_mq;
 
-static uint8_t pubCt = 0;
-static uint8_t subCt = 0;
-
 #define MQTT_STR_STR(V) #V
 #define MQTT_STR(V) MQTT_STR_STR(V)
 
-static void mqttDataNothing(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t data_len)
-{
-
-}
 
 /* Simple method to set MQTT connection */
 void mqtt_setconn(uint8_t state)
@@ -55,10 +44,17 @@ void mqtt_setconn(uint8_t state)
 	}
 }
 
+bool mqttIsConnected()
+{
+	return isConnected;
+}
+
+
 static void mqttConnectedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	NODE_DBG("MQTT: Connected\n");
+	isConnected = true;
 
 	unsigned i;
 
@@ -75,6 +71,7 @@ static void mqttDisconnectedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	NODE_DBG("MQTT: Disconnected\n");
+	isConnected = false;
 
 #ifdef USER_TEST_MSG
 	NODE_DBG("Disarming testmq_timer\n");
@@ -86,7 +83,6 @@ static void mqttPublishedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	NODE_DBG("mqttPublishedCb\n");
-
 }
 
 /* MQTT Data received CB.
@@ -150,16 +146,17 @@ static void testmq_timer_cb(void *arg)
 	os_timer_disarm(&testmq_timer);
 	MQTT_DBG("Posting Test msg\n");
 
-	// BOOL MQTT_Publish(MQTT_Client *client, const char* topic, const char* data, int data_length, int qos, int retain)
-	MQTT_Publish(&mqtt_client, , testmsg, strlen(testmsg), 1, 0);
+	mqtt_api_pub(0, testmsg, strlen(testmsg));
 
 	os_timer_arm(&testmq_timer, 7033, 0);
 }
 #endif
 
-bool mqtt_api_pub(int topicNum, char * msg, int len)
+bool mqtt_api_pub(unsigned topicNum, char * msg, int len)
 {
-	if ((log_pub == NULL) || (msg == NULL) || (len <= 0) || (topicNum > MQTT_PUB_COUNT)) return false;
+	if (topicNum >= MQTT_PUB_COUNT) return false;
+	if ((user_mqtt->pubs[topicNum]->topic == NULL) || (msg == NULL) || (len <= 0) )
+		return false;
 
 	return MQTT_Publish(&mqtt_client, user_mqtt->pubs[topicNum]->topic, msg, len, 1, 0);
 }

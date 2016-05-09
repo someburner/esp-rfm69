@@ -28,10 +28,12 @@ void mqtt_app_init(char * ip);
 
 int set_mqtt_host(char * host);
 
+bool mqttIsConnected();
 void mqtt_setconn(uint8_t state);
+
 void mqtt_app_update_handle(USER_MQTT_T * user_mqtt_ptr);
 void mqtt_app_update_topics();
 
-bool mqtt_api_pub(int topicNum, char * msg, int len);
+bool mqtt_api_pub(unsigned topicNum, char * msg, int len);
 
 #endif

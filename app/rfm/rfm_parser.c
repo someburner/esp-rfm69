@@ -15,6 +15,8 @@
 #define EVENT_COUNT 2
 #define MAX_LIVE_DATA_LISTENERS 1
 
+#define DEFAULT_MQTT_PUB		0
+
 static HCBUFF hrxBuff;
 
 extern RadioStatus radioStatus;
@@ -137,7 +139,7 @@ void live_event(uint32 stamp, uint8* buf, int len)
 
 void default_event(uint32 stamp, uint8* buf, int len)
 {
-	NODE_ERR("defaukt event\n");
+	NODE_ERR("default event\n");
 
 	char lineBuff[128];
 	unsigned int lineLen = 0;
@@ -152,6 +154,13 @@ void default_event(uint32 stamp, uint8* buf, int len)
 	}
 	lineLen = os_sprintf(lineBuff,"|\r\n");
 	if (lineLen > 0) console_write_string(lineBuff, lineLen);
+
+	if ((MQTT_ENABLE == 1) && mqttIsConnected())
+	{
+		mqtt_api_pub(DEFAULT_MQTT_PUB, buf, len);
+	}
+
+
 	// NODE_DBG("Buffer Contents:\n");
 	// unsigned i;
 	//
