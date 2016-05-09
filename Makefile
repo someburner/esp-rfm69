@@ -4,7 +4,7 @@ ifndef PDIR
 endif
 
 # Base directory for the compiler
-OPENSDK_ROOT ?= /YOUR-PATH/esp-open-sdk-1.5.2
+OPENSDK_ROOT ?= /home/jeffrey/esp-open-sdk-1.5.2
 XTENSA_TOOLS_ROOT ?= $(OPENSDK_ROOT)/xtensa-lx106-elf/bin/
 SDK_ROOT 			?= $(OPENSDK_ROOT)/sdk/
 PROJ_ROOT = $(abspath $(dir $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))/
@@ -27,18 +27,18 @@ STA_PASS 				?= yourpassword
 MQTT_ENABLE				= 1
 
 MQTT_SUB_COUNT			= 2				#number of subs
-MQTT_SUB_TOPIC1		?= testsub		#sub topic 1
-MQTT_SUB_TOPIC2		?= testsub2		#sub topic 2
+MQTT_SUB_TOPIC1		?= esp-rfm69-sub1		#sub topic 1
+MQTT_SUB_TOPIC2		?= esp-rfm69-sub2		#sub topic 2
 
 MQTT_PUB_COUNT			= 1				#number of pubs
-MQTT_PUB_TOPIC1		?= testpub		#pub topic 1
+MQTT_PUB_TOPIC1		?= esp-rfm69-topic1		#pub topic 1
 
 #If MQTT_USE_IP is set to 1, it will init MQTT with DEFAULT_MQTT_IP
 #if MQTT_USE_IP is set to 0, it will first find the ip for MQTT_HOST_NAME
 # and initialize MQTT using the IP found (if it is found)
 MQTT_USE_IP				= 0
-DEFAULT_MQTT_IP		?= 1.2.3.4
-MQTT_HOST_NAME			?= your.domain.com
+DEFAULT_MQTT_IP		?= 198.41.30.241
+MQTT_HOST_NAME			?= iot.eclipse.org #public broker
 
 #Pin number for RFM69 interrupts
 RFM_INTR_PIN        ?= 2

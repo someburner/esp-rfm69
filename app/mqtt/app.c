@@ -13,7 +13,7 @@
 #include "mqtt_msg.h"
 #include "mqtt_api.h"
 
-// #define USER_TEST_MSG
+// #define USER_TEST_MSG //<--Uncomment to send the test message below on timer
 
 static MQTT_Client mqtt_client;
 static USER_MQTT_T * user_mqtt = NULL;
