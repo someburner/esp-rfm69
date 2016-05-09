@@ -4,7 +4,7 @@ ifndef PDIR
 endif
 
 # Base directory for the compiler
-OPENSDK_ROOT ?= /home/jeffrey/esp-open-sdk-1.5.2
+OPENSDK_ROOT 		?= YOUR-PATH/esp-open-sdk-1.5.2
 XTENSA_TOOLS_ROOT ?= $(OPENSDK_ROOT)/xtensa-lx106-elf/bin/
 SDK_ROOT 			?= $(OPENSDK_ROOT)/sdk/
 PROJ_ROOT = $(abspath $(dir $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))/
