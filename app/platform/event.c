@@ -1,5 +1,4 @@
 #include "user_config.h"
-#include "status.h"
 #include "c_stdio.h"
 #include "c_stdlib.h"
 #include "c_types.h"
@@ -7,18 +6,18 @@
 
 #include "driver/gpio16.h"
 
-#ifdef RFM_MQTT_EN
-#include "mqtt_api.h"
-#endif
-
-#define WIFI_LED_PIN_NUM    3 //GPIO0
-#define RFM_LED_PIN_NUM     1 //GPIO5
+#include "mqtt/mqtt_api.h"
+#include "util/netutil.h"
+#include "event.h"
 
 typedef enum {
    wifi_disconn,
    wifi_isconn,
    wifi_gotip
 } config_type_t;
+
+#define HOST_STR_STR(V) #V
+#define HOST_STR(V) HOST_STR_STR(V)
 
 // wifi status change callbacks
 static WifiStateChangeCb wifi_state_change_cb[4];
@@ -37,23 +36,18 @@ static ETSTimer rfmLedTimer;
 static uint8_t wifiLedState = 0;
 static uint8_t rfmLedState = 0;
 
-// reasons for which a connection failed
+/* WiFi Failure reasons. See user_interface.h */
 uint8_t wifiReason = 0;
 static char *wifiReasons[] =
 {
-   "", "unspecified", "auth_expire", "auth_leave", "assoc_expire",
-   "assoc_toomany", "not_authed", "not_assoced", "assoc_leave",
-   "assoc_not_authed", "disassoc_pwrcap_bad", "disassoc_supchan_bad",
-   "ie_invalid", "mic_failure",
-
-   "14", "15", "16", "17", "18", "19", "20", "21", "22", "23",
-   /*
-   "4way_handshake_timeout",
-   "group_key_update_timeout", "ie_in_4way_differs", "group_cipher_invalid",
-   "pairwise_cipher_invalid", "akmp_invalid", "unsupp_rsn_ie_version",
-   "invalid_rsn_ie_cap", "802_1x_auth_failed", "cipher_suite_rejected",
-   */
-   "beacon_timeout", "no_ap_found"
+   "", "unspecified", "auth_expire", "auth_leave", "assoc_expire",            //4
+   "assoc_toomany", "not_authed", "not_assoced", "assoc_leave",               //8
+   "assoc_not_authed", "disassoc_pwrcap_bad", "disassoc_supchan_bad", "",     //12
+   "ie_invalid", "mic_failure", "4way_handshake_timeout",                     //15
+   "group_key_update_timeout", "ie_in_4way_differs", "group_cipher_invalid",  //18
+   "pairwise_cipher_invalid", "akmp_invalid", "unsupp_rsn_ie_version",        //21
+   "invalid_rsn_ie_cap", "802_1x_auth_failed", "cipher_suite_rejected",       //24
+   "beacon_timeout", "no_ap_found"                                            //26
 };
 
 // callback when wifi status changes
@@ -66,77 +60,28 @@ static char* wifiGetReason(void)
    return wifiReasons[1];
 }
 
-// Set the LED on or off, respecting the defined polarity
-static void setLed(int on, int8_t pin)
+void user_mqtt_timeout_cb(uint32_t *arg)
 {
-   if (pin < 0) return; // disabled
-   // LED is active-low
-   if (on) { gpio_write(pin, on); }
-   else { gpio_write(pin, 0); }
+   NODE_DBG("user_mqtt_timeout\n");
 }
 
-// Timer callback to update WiFi status LED
-static void wifiLedTimerCb(void *v)
-{
-   int time = 1000;
-   if (wifiState == wifi_gotip)
-   {
-      // connected, all is good, solid light with a short dark blip every 3 seconds
-      wifiLedState = 1;
-      time = 15000;
-   }
-   else if (wifiState == wifi_isconn)
-   {
-      // waiting for DHCP, go on/off every second
-      wifiLedState = 1 - wifiLedState;
-      time = 1000;
-   }
-   else
-   {
-      // not connected
-      switch (wifi_get_opmode())
+static void nslookup_cb(const char *name, ip_addr_t *ip, void *arg) {
+	char ipstr[17];
+	if (ip == NULL) {
+      NODE_DBG("Dns Failed\n");
+	} else {
+      ipaddr_ntoa_r(ip, ipstr, sizeof(ipstr));
+      NODE_DBG("Host: %s -> ip: %s\n", name, ipstr);
+      #ifdef MQTT_EXPECT_IP
+      if (os_strcmp(ipstr, DEFAULT_MQTT_EXPECT_IP) != 0) NODE_DBG("Dns mismatch?\n");
+      #endif
+      if (MQTT_ENABLE == 0) return;
+      if (MQTT_USE_IP == 0)
       {
-         case 1: // STA
-            wifiLedState = 0;
-            break;
-         case 2: // AP
-            wifiLedState = 1-wifiLedState;
-            time = wifiLedState ? 50 : 1950;
-            break;
-         case 3: // STA+AP
-            wifiLedState = 1-wifiLedState;
-            time = wifiLedState ? 50 : 950;
-            break;
+         mqtt_app_init(ipstr);
+         mqtt_setconn(1);
       }
-   }
-   setLed(wifiLedState, WIFI_LED_PIN_NUM);
-   os_timer_arm(&wifiLedTimer, time, 0);
-}
-
-// Timer callback to update RFM69 status LED
-static void rfmLedTimerCb(void *v)
-{
-   int time = 1000;
-   if (rfmState == rfm_unknown)
-   {
-      // connected, all is good, solid light with a short dark blip every 3 seconds
-      rfmLedState = 1-rfmLedState;
-      time = rfmLedState ? 2900 : 1200;
-   }
-   else if (rfmState == rfm_connected)
-   {
-      // waiting for DHCP, go on/off every second
-      rfmLedState = 1;
-      time = 10001;
-   }
-   else
-   {
-      // not connected
-      rfmLedState = 1-rfmLedState;
-      time = rfmLedState ? 950 : 1950;
-   }
-   setLed(rfmLedState, RFM_LED_PIN_NUM);
-   os_timer_arm(&rfmLedTimer, time, 0);
+	}
 }
 
 // change the wifi state indication
@@ -148,20 +93,12 @@ void statusWifiUpdate(uint8_t state)
    {
       time_next = 10933;
    }
-   // schedule an update (don't want to run into concurrency issues)
-   os_timer_disarm(&wifiLedTimer);
-   os_timer_setfn(&wifiLedTimer, wifiLedTimerCb, NULL);
-   os_timer_arm(&wifiLedTimer, time_next, 0);
 }
 
 // change the rfm69 state indication
 void statusRfmUpdate(uint8_t state)
 {
    rfmState = state;
-   // schedule an update (don't want to run into concurrency issues)
-   os_timer_disarm(&rfmLedTimer);
-   os_timer_setfn(&rfmLedTimer, rfmLedTimerCb, NULL);
-   os_timer_arm(&rfmLedTimer, 527, 0);
 }
 
 // handler for wifi status change callback coming in from espressif library
@@ -187,9 +124,11 @@ static void wifiHandleEventCb(System_Event_t *evt) {
          NODE_DBG("Wifi disconnected from ssid %s, reason %s (%d)\n",
          evt->event_info.disconnected.ssid, wifiGetReason(), evt->event_info.disconnected.reason);
          wifiStatus_mq = wifiIsDisconnected;
-         #ifdef RFM_MQTT_EN
-         mqtt_setconn(0);
-         #endif
+         if (MQTT_ENABLE == 1)
+         {
+            mqtt_setconn(0);
+         }
+
          statusWifiUpdate(wifiState);
       } break;
       case EVENT_STAMODE_AUTHMODE_CHANGE:
@@ -207,11 +146,15 @@ static void wifiHandleEventCb(System_Event_t *evt) {
          IP2STR(&evt->event_info.got_ip.gw));
          statusWifiUpdate(wifiState);
          wifiStatus_mq = 2;
-         #ifdef RFM_MQTT_EN
-         mqtt_setconn(1);
-         #endif
+         if (MQTT_ENABLE == 0) break;
 
-         // wifiStartMDNS(evt->event_info.got_ip.ip);
+         if (MQTT_USE_IP == 0)
+         {
+            netutil_nslookup(HOST_STR(MQTT_HOST_NAME), nslookup_cb);
+         } else {
+            mqtt_app_init(HOST_STR(DEFAULT_MQTT_IP));
+            mqtt_setconn(1);
+         }
       } break;
       case EVENT_SOFTAPMODE_STACONNECTED:
       {
@@ -233,18 +176,10 @@ static void wifiHandleEventCb(System_Event_t *evt) {
    }
 }
 
-void statusInit(void)
+void user_event_init()
 {
-   STATUS_DBG("CONN led=%d\n", 1);
+   NODE_DBG("user_event_init\n");
 
    wifi_set_event_handler_cb(wifiHandleEventCb);
-
-   os_timer_disarm(&wifiLedTimer);
-   os_timer_setfn(&wifiLedTimer, wifiLedTimerCb, NULL);
-   os_timer_arm(&wifiLedTimer, 2003, 0);
-
-   os_timer_disarm(&rfmLedTimer);
-   os_timer_setfn(&rfmLedTimer, rfmLedTimerCb, NULL);
-   os_timer_arm(&rfmLedTimer, 5517, 0);
 
 }

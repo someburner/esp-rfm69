@@ -14,6 +14,7 @@
 #define MQTT_KEEPALIVE        20	 /*second*/
 #define MQTT_SEND_TIMOUT		5
 
+#define MQTT_MAX_TOPIC_LEN    25
 
 // #define MQTT_CLIENT_ID		"DVES_%08X"
 #define MQTT_USER			       "DVES_USER"

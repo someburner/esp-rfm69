@@ -15,8 +15,6 @@ TARGET = eagle
 #FLAVOR = release
 FLAVOR = debug
 
-# DEBUGGER = 1
-
 # EXTRA_CCFLAGS += -u
 
 ifndef PDIR # {
@@ -41,7 +39,7 @@ endif # } PDIR
 
 
 APPDIR = .
-LDDIR = $(abspath /YOUR-ESP-RFM69-PATH/esp-rfm69/ld)/
+LDDIR = $(PROJ_ROOT)/ld/
 
 CCFLAGS += -Os
 

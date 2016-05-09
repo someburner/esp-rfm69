@@ -24,7 +24,8 @@ endif
 #
 #DEFINES +=
 EXTRA_CCFLAGS += \
-	-DVERSION="$(VERSION)" -DSTA_PASS="$(STA_PASS)" -DSTA_SSID="$(STA_SSID)"
+	-DVERSION="$(VERSION)" -DSTA_PASS="$(STA_PASS)" -DSTA_SSID="$(STA_SSID)" \
+	-DMQTT_ENABLE=$(MQTT_ENABLE)
 
 
 #############################################################

@@ -96,6 +96,12 @@ enum {
 #define FS_DBG
 #endif
 
+#ifdef PING_DEBUG
+#define PING_DBG                c_printf
+#else
+#define PING_DBG
+#endif /* PING_DEBUG */
+
 #ifdef HTTP_CGI_DEBUG
 #define HTTP_CGI_DBG          c_printf
 #else

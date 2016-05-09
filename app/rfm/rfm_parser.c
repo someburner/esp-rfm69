@@ -8,7 +8,7 @@
 #include "rfm_parser.h"
 #include "rfm.h"
 
-#include "platform/status.h"
+#include "platform/event.h"
 
 #include "../mqtt/mqtt_api.h"
 

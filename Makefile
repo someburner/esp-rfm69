@@ -4,12 +4,13 @@ ifndef PDIR
 endif
 
 # Base directory for the compiler
-XTENSA_TOOLS_ROOT ?= $(abspath /YOUR-PATH/esp-open-sdk-1.5.2/xtensa-lx106-elf/bin)/
-SDK_ROOT 			?= $(abspath /YOUR-PATH/esp-open-sdk-1.5.2/sdk)/
-PROJ_ROOT 			?= $(abspath /YOUR-PATH/esp-rfm69)/
+OPENSDK_ROOT ?= /YOUR-PATH/esp-open-sdk-1.5.2
+XTENSA_TOOLS_ROOT ?= $(OPENSDK_ROOT)/xtensa-lx106-elf/bin/
+SDK_ROOT 			?= $(OPENSDK_ROOT)/sdk/
+PROJ_ROOT = $(abspath $(dir $(CURDIR)/$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))))/
 
 # Base directory of the ESP8266 SDK package, absolute
-SDK_BASE				?= $(abspath /YOUR-PATH/esp_iot_sdk_v1.5.2)
+SDK_BASE				?= $(abspath $(OPENSDK_ROOT)/esp_iot_sdk_v1.5.2)
 
 #############################################################
 # User Configuration
@@ -22,8 +23,22 @@ SPIFFS_ADDR				?= 0x80000
 STA_SSID 				?= YOUR_SSID
 STA_PASS 				?= yourpassword
 
-#Choose to enable MQTT client
-BUILD_MQTT				= 1
+#If MQTT_ENABLE is set to 0, it will not be initialized
+MQTT_ENABLE				= 1
+
+MQTT_SUB_COUNT			= 2				#number of subs
+MQTT_SUB_TOPIC1		?= testsub		#sub topic 1
+MQTT_SUB_TOPIC2		?= testsub2		#sub topic 2
+
+MQTT_PUB_COUNT			= 1				#number of pubs
+MQTT_PUB_TOPIC1		?= testpub		#pub topic 1
+
+#If MQTT_USE_IP is set to 1, it will init MQTT with DEFAULT_MQTT_IP
+#if MQTT_USE_IP is set to 0, it will first find the ip for MQTT_HOST_NAME
+# and initialize MQTT using the IP found (if it is found)
+MQTT_USE_IP				= 0
+DEFAULT_MQTT_IP		?= 1.2.3.4
+MQTT_HOST_NAME			?= your.domain.com
 
 #Pin number for RFM69 interrupts
 RFM_INTR_PIN        ?= 2
@@ -39,9 +54,6 @@ RFM69_DEV_ID        ?= 3
 
 RFM69_IS_HW         ?= 1
 RFM69_ENCRYPT_KEY   ?= \"Rfm69_EncryptKey\"
-
-# max bin file for 1MB flash partition: 1004KB
-ESP_FLASH_MAX       ?= 1028096
 
 #Flash esp_init_data_default?
 FLASH_INIT_DEFAULT	?= no

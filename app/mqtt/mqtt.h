@@ -33,9 +33,6 @@
 #include "mqtt_msg.h"
 #include "user_interface.h"
 #include "mqtt_queue.h"
-#include "mqtt_api.h"
-
-// char * generateDateTime(uint32 stamp);
 
 #define MQTT_ERR_QUEUE_FULL         -700
 #define MQTT_ERR_PUBLISH_FAILED     -701
@@ -79,7 +76,7 @@ typedef enum {
 	DNS_RESOLVE,
 	TCP_DISCONNECTING,
 	TCP_DISCONNECTED,
-   TCP_RECONNECT_DISCONNECTING,
+	TCP_RECONNECT_DISCONNECTING,
 	TCP_RECONNECT_REQ,
 	TCP_RECONNECT,
 	TCP_CONNECTING,
@@ -90,7 +87,7 @@ typedef enum {
 	MQTT_SUBSCIBE_SEND,
 	MQTT_SUBSCIBE_SENDING,
 	MQTT_DATA,
-   MQTT_KEEPALIVE_SEND,
+	MQTT_KEEPALIVE_SEND,
 	MQTT_PUBLISH_RECV,
 	MQTT_PUBLISHING,
 	MQTT_DELETING,
@@ -101,44 +98,42 @@ typedef void (*MqttCallback)(uint32_t *args);
 typedef void (*MqttDataCallback)(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t lengh);
 
 typedef struct  {
-   struct espconn *pCon;
-   uint8_t security;
-   uint8_t* host;
-   uint32_t port;
-   ip_addr_t ip;
-   mqtt_state_t  mqtt_state;
-   mqtt_connect_info_t connect_info;
-   MqttCallback connectedCb;
-   MqttCallback disconnectedCb;
-   MqttCallback publishedCb;
-   MqttCallback timeoutCb;
-   MqttDataCallback dataCb;
-   ETSTimer mqttTimer;
-   uint32_t keepAliveTick;
-   uint32_t reconnectTick;
-   uint32_t sendTimeout;
-   tConnState connState;
-   QUEUE msgQueue;
-
-   //user data
-   rfm69_mon_t * rfmon; //allow us to detach from mqtt
+	struct espconn *pCon;
+	uint8_t security;
+	uint8_t* host;
+	uint32_t port;
+	ip_addr_t ip;
+	mqtt_state_t  mqtt_state;
+	mqtt_connect_info_t connect_info;
+	MqttCallback connectedCb;
+	MqttCallback disconnectedCb;
+	MqttCallback publishedCb;
+	MqttCallback timeoutCb;
+	MqttDataCallback dataCb;
+	ETSTimer mqttTimer;
+	uint32_t keepAliveTick;
+	uint32_t reconnectTick;
+	uint32_t sendTimeout;
+	tConnState connState;
+	QUEUE msgQueue;
+	void* user_data;
 } MQTT_Client;
 
-#define SEC_NONSSL   0
-#define SEC_SSL      1
+#define SEC_NONSSL 0
+#define SEC_SSL	1
 
-#define MQTT_FLAG_CONNECTED   1
-#define MQTT_FLAG_READY       2
-#define MQTT_FLAG_EXIT        4
+#define MQTT_FLAG_CONNECTED 	1
+#define MQTT_FLAG_READY 		2
+#define MQTT_FLAG_EXIT 			4
 
-#define MQTT_EVENT_TYPE_NONE                 0
-#define MQTT_EVENT_TYPE_CONNECTED            1
-#define MQTT_EVENT_TYPE_DISCONNECTED         2
-#define MQTT_EVENT_TYPE_SUBSCRIBED           3
-#define MQTT_EVENT_TYPE_UNSUBSCRIBED         4
-#define MQTT_EVENT_TYPE_PUBLISH              5
-#define MQTT_EVENT_TYPE_PUBLISHED            6
-#define MQTT_EVENT_TYPE_EXITED               7
+#define MQTT_EVENT_TYPE_NONE 			0
+#define MQTT_EVENT_TYPE_CONNECTED 		1
+#define MQTT_EVENT_TYPE_DISCONNECTED 	2
+#define MQTT_EVENT_TYPE_SUBSCRIBED 		3
+#define MQTT_EVENT_TYPE_UNSUBSCRIBED 	4
+#define MQTT_EVENT_TYPE_PUBLISH 		5
+#define MQTT_EVENT_TYPE_PUBLISHED 		6
+#define MQTT_EVENT_TYPE_EXITED 			7
 #define MQTT_EVENT_TYPE_PUBLISH_CONTINUATION 8
 
 void MQTT_InitConnection(MQTT_Client *mqttClient, uint8_t* host, uint32 port, uint8_t security);
@@ -154,6 +149,5 @@ BOOL MQTT_Subscribe(MQTT_Client *client, char* topic, uint8_t qos);
 void MQTT_Connect(MQTT_Client *mqttClient);
 void MQTT_Disconnect(MQTT_Client *mqttClient);
 BOOL MQTT_Publish(MQTT_Client *client, const char* topic, const char* data, int data_length, int qos, int retain);
-BOOL MQTT_Ping(MQTT_Client *client);
 
 #endif /* USER_AT_MQTT_H_ */

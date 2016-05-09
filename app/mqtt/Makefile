@@ -25,6 +25,15 @@ endif
 #DEFINES +=
 STD_CFLAGS=-std=gnu11 -Wimplicit
 
+EXTRA_CCFLAGS += \
+	-DMQTT_SUB_COUNT=$(MQTT_SUB_COUNT) \
+	-DMQTT_SUB_TOPIC1="$(MQTT_SUB_TOPIC1)" -DMQTT_SUB_TOPIC2="$(MQTT_SUB_TOPIC2)" \
+	-DMQTT_PUB_COUNT=$(MQTT_PUB_COUNT) \
+	-DMQTT_PUB_TOPIC1="$(MQTT_PUB_TOPIC1)" \
+	-DMQTT_HOST_NAME="$(MQTT_HOST_NAME)" -DMQTT_USE_IP=$(MQTT_USE_IP) \
+	-DDEFAULT_MQTT_IP="$(DEFAULT_MQTT_IP)"
+
+
 #############################################################
 # Recursion Magic - Don't touch this!!
 #

@@ -19,7 +19,7 @@
 #include "flash_api.h"
 
 #include "mqtt/app.h"
-#include "status.h"
+#include "platform/event.h"
 
 static os_timer_t heapTimer;
 
@@ -143,9 +143,10 @@ static void config_wifi()
 void esp_rfm69_init(void)
 {
    system_update_cpu_freq(160); //overclock :)
-   statusInit();
 
 	uart_init(BIT_RATE_115200,BIT_RATE_115200);
+
+   user_event_init();
 
    #if defined(FLASH_SAFE_API)
        if( flash_safe_get_size_byte() != flash_rom_get_size_byte()) {
@@ -220,9 +221,6 @@ void esp_rfm69_init(void)
 
    init_dns();
    init_http_server();
-
-   /* Comment/Uncomment for MQTT */
-   // mqtt_app_init();
 
    res = init_rfm_handler();
    NODE_DBG("RFM69 Handler Init %s!\n", (res==1) ? "OK":"Error");
