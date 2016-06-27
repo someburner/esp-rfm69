@@ -108,6 +108,13 @@ static void RFM_Task(os_event_t *e)
 {
    RFM_Handle* rfm = (RFM_Handle*)e->par;
 
+   if ( ((int)e->sig) == RFM_SIG_ISR0 )
+   {
+      rfm69_exec_isr();
+      return;
+   }
+
+
    switch(rfm->state)
    {
       /* -------  Default / Do Nothing case --------

@@ -17,6 +17,14 @@ typedef void (*RfmMsgCallback)(uint32_t *args);
 void rfm_set_promiscuous(bool onoff);
 void rfm_toggle_all_output(void);
 
+/* RFM Task Signals */
+typedef enum {
+	RFM_SIG_INVALID,
+	RFM_SIG_ISR0,
+	RFM_SIG_NORMAL,
+	RFM_SIG_MAX
+} RFM_SIG_T;
+
 /* Various init return codes */
 typedef enum {
 	RFM_INVALID,

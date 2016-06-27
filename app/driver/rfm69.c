@@ -14,6 +14,8 @@
 
 #define SPI_DEV HSPI
 
+LOCAL void ICACHE_RAM_ATTR rfm69_interruptHandler(unsigned pin, unsigned level);
+
 extern uint8_t pin_num[GPIO_PIN_NUM];
 
 const char *gpio_type_desc[] =
@@ -263,7 +265,12 @@ void rfm69_receiveBegin()
 //                pin   - interrupt pin
 //                level - pin level type
 ////////////////////////////////////////////////////////////////////////////////
-LOCAL void ICACHE_RAM_ATTR rfm69_interruptHandler(unsigned pin, unsigned level)
+void rfm69_interruptHandler(unsigned pin, unsigned level)
+{
+   system_os_post(RFM_TASK_PRIO, (os_signal_t)RFM_SIG_ISR0, (os_param_t)rfmptr);
+}
+
+void rfm69_exec_isr()
 {
    unsigned i;
    static RFM_HEADER_T h;
@@ -277,7 +284,7 @@ LOCAL void ICACHE_RAM_ATTR rfm69_interruptHandler(unsigned pin, unsigned level)
       rfm69_setMode(RF69_OP_STANDBY);
       h.data = rfm69_readReg32(REG_FIFO);
 
-      rfmptr->driver.TARGETID = (uint8_t) ((rxData & MASK32_BIT1) >> 16);
+      rfmptr->driver.TARGETID = h.get.TARGETID; //(uint8_t) ((h.data & MASK32_BIT1) >> 16);
       rfmptr->driver.PAYLOADLEN = h.get.PAYLOADLEN;
 
       if(!((rfmptr->options & RFM_PROMISCUOUS) || h.get.TARGETID == rfmptr->nodeId

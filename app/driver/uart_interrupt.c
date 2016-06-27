@@ -32,7 +32,7 @@ static uart0_data_received_callback_t uart0_data_received_callback=NULL;
 
 LOCAL void ICACHE_RAM_ATTR uart_rx_intr_handler(void *para);
 
-LOCAL void ICACHE_RAM_ATTR uart_transmit(uint8_t uart);
+LOCAL void uart_transmit(uint8_t uart);
 
 #define TX_ITEM_LEN 128
 
@@ -45,7 +45,7 @@ linked_list tx_list[2];
 os_timer_t tx_timer[2];
 
 //UART TRANSMIT ------------------------------------------------------------
-STATUS ICACHE_RAM_ATTR uart_tx_one_char(uint8_t uart, uint8_t TxChar)
+STATUS uart_tx_one_char(uint8_t uart, uint8_t TxChar)
 {
    while (true)
    {
@@ -118,12 +118,12 @@ void ICACHE_RAM_ATTR uart_write(uint8_t uart,uint8_t *data,int len)
 	os_timer_arm(&tx_timer[uart], 20, 0);
 }
 
-void ICACHE_RAM_ATTR uart_write_char(uint8_t uart,char c)
+void uart_write_char(uint8_t uart,char c)
 {
 	uart_write(uart,&c,1);
 }
 
-void ICACHE_RAM_ATTR uart_write_string(uint8_t uart,const char *s)
+void uart_write_string(uint8_t uart,const char *s)
 {
 	int str_len = os_strlen(s);
 	uart_write(uart,(uint8_t*)s,str_len);
@@ -183,7 +183,7 @@ void uart_config(uint8_t uart_no)
    SET_PERI_REG_MASK(UART_INT_ENA(uart_no), UART_RXFIFO_FULL_INT_ENA|UART_RXFIFO_OVF_INT_ENA);
 }
 
-LOCAL void ICACHE_RAM_ATTR uart_transmit(uint8_t uart)
+LOCAL void uart_transmit(uint8_t uart)
 {
    uint8_t tx_fifo_len;
    uint8_t fifo_remain;
@@ -225,7 +225,7 @@ process:
 	}
 }
 
-LOCAL void ICACHE_RAM_ATTR uart0_data_received()
+LOCAL void uart0_data_received()
 {
 	uint8_t data_len = UART_RX_FIFO_COUNT(0);
 
@@ -309,7 +309,7 @@ LOCAL void ICACHE_RAM_ATTR uart_rx_intr_handler(void *para)
 	}
 }
 
-void ICACHE_RAM_ATTR uart_register_data_callback(uart0_data_received_callback_t callback)
+void uart_register_data_callback(uart0_data_received_callback_t callback)
 {
 	uart0_data_received_callback=callback;
 }
@@ -319,7 +319,7 @@ void ICACHE_RAM_ATTR uart_clear_data_callback()
 	uart0_data_received_callback=NULL;
 }
 
-void ICACHE_RAM_ATTR uart1_write_char(char c)
+void uart1_write_char(char c)
 {
    uart_write_char(1, c);
 }

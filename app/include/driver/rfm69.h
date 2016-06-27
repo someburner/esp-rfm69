@@ -27,6 +27,8 @@ const uint8_t CONFIG[24][2];
 rfm_retcode_t rfm69_spi_init(void);
 rfm_retcode_t rfm69_init(RFM_Handle *handle, uint8_t ID, uint8_t networkID);
 
+void rfm69_exec_isr();
+
 bool rfm69_receiveDone();
 void rfm69_receiveBegin();
 void rfm69_setMode(RFM69_OP_MODE newMode);
@@ -48,7 +50,7 @@ void rfm69_setPowerLevel(uint8_t level); // reduce/increase transmit power level
 uint8_t readTemperature(uint8_t calFactor); // get CMOS temperature (8bit) -def calFactor=0
 void rcCalibration(); // calibrate the internal RC oscillator for use in wide temperature variations - see datasheet section [4.3.5. RC Timer Accuracy]
 */
-void rfm69_writeToFIFO32(uint8* outbuf, uint8_t datalen);
+void ICACHE_RAM_ATTR rfm69_writeToFIFO32(uint8* outbuf, uint8_t datalen);
 uint8_t ICACHE_RAM_ATTR rfm69_readReg(uint8_t regAddr);
 void ICACHE_RAM_ATTR rfm69_writeReg(uint8_t regAddr, uint8_t value);
 // uint8_t rfm69_readReg(uint8_t regAddr);

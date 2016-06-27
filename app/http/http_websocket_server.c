@@ -37,7 +37,7 @@ static http_callback data_sent_callback;
 static http_callback client_disconnected_callback;
 static http_callback client_connected_callback;
 
-static void ICACHE_RAM_ATTR http_ws_handle_message(http_connection *c,ws_frame *msg)
+static void http_ws_handle_message(http_connection *c,ws_frame *msg)
 {
 	if (c->cgi.function!=NULL)
 	{

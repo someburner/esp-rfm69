@@ -173,7 +173,6 @@ void spi_rx_byte_order(uint8 spi_no, uint8 byte_order){
 //				  the data variables (for anything <32 bits).
 //
 ////////////////////////////////////////////////////////////////////////////////
-
 uint32 ICACHE_RAM_ATTR spi_transaction(uint8 spi_no, uint32 addr_bits,
 											uint32 addr_data, uint32 dout_bits,
 											uint32 dout_data, uint32 din_bits,
@@ -266,6 +265,7 @@ uint32 ICACHE_RAM_ATTR spi_transaction(uint8 spi_no, uint32 addr_bits,
 	//Transaction completed
 	return 1; //success
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
