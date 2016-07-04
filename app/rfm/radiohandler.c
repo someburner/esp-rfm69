@@ -479,14 +479,23 @@ void generate_next_OTA_msg()
          RFM_DBG("buff_offset = %d, headerLen = %d\n", buff_offset, headerLen);
 
          // if we're in the last buffer sequence..
+         int tot_payload_rem = rfm_inst->ota->fs_st->size - ((rfm_inst->ota->seq)*16);
          if (rfm_inst->ota->seq == (rfm_inst->ota->fs_st->size /16))
          {
-            int tot_payload_rem = rfm_inst->ota->fs_st->size - ((rfm_inst->ota->seq)*16);
             if (tot_payload_rem%16 != 0)
             {
                // next_payload_len = tot_payload_rem%16; //truncate next_payload_len
                next_payload_len = tot_payload_rem;
 
+               rfm_inst->ota->isEOF = true;
+            }
+         }
+         
+         else if ((rfm_inst->ota->seq+1) == (rfm_inst->ota->fs_st->size /16))
+         {
+            if ( (tot_payload_rem%16 == 0))
+            {
+               next_payload_len = 16;
                rfm_inst->ota->isEOF = true;
             }
          }
