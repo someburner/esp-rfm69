@@ -1,13 +1,11 @@
-#ESP-RFM69
+# ESP-RFM69
 
-##Overview
------------------------
+## Overview
 
-RFM69 driver and web interface for the ESP8288.
+RFM69 driver and web interface for the ESP8266. Note - this is fairly dated (old SDK), but should still work with 1.5.x.
 
 
-##Features:
------------------------
+## Features:
 
 * RFM69 driver for ESP8266
 * NGINX-style HTTP server, serving files from SPIFFS
@@ -23,8 +21,7 @@ RFM69 driver and web interface for the ESP8288.
 * Built with Espressif's NONOS SDK v1.5.2 and NONOS lwip 1.5.2 module
 
 
-##Bugs & Limitations:
------------------------
+## Bugs & Limitations:
 
 * Have not tested anything other than 66-byte encrypted packet mode. YMMV
 * File System uploader crashes on occasion. Probably not too difficult to
@@ -36,8 +33,7 @@ RFM69 driver and web interface for the ESP8288.
    RFM69 driver at lowpowerlab.com now works flawlessly.
 
 
-##Credits:
------------------------
+## Credits:
 
 Any and all contributers to/authors of the various modules used in this project
 (see list below/LICENSE file). But particularly:
@@ -52,39 +48,33 @@ Any and all contributers to/authors of the various modules used in this project
 * Max Filippov and Paul Sokolovsky (pfalcon) for open-sourcing this bad boy.
 
 
-##Installation
------------------------
+## Installation
 
-See [Wiki](https://github.com/someburner/esp-rfm69/wiki/Installation)
+See [Wiki](https://github.com/someburner/esp-rfm69/wiki/Installation).
 
 
-##Serial Monitor:
------------------------
+## Serial Monitor:
 
 Default baud rate is 74880. After user_init is called, it goes to 115200.
 If platformIO is installed, serial monitor can be invoked as such
 (replace /dev/ftdi_esp with your com port):
 
-```
+```sh
 platformio serialports monitor -b 115200 -p /dev/ftdi_esp
 ```
 
 
-##Moteino OTA:
------------------------
+## Moteino OTA:
 
 See [Moteino_OTA](https://github.com/someburner/esp-rfm69/wiki/Moteino-OTA)
 
 
+## MQTT
 
-##MQTT
------------------------
-
-See [MQTT](https://github.com/someburner/esp-rfm69/wiki/MQTT)
+See [MQTT](https://github.com/someburner/esp-rfm69/wiki/MQTT). This is a very ugly, hard-coded implementation, sorry.
 
 
-##SPI Flash Info
------------------------
+## SPI Flash Info
 
 The flash chips packaged with esp-xx modules can be of various sizes and come
 from various manufacturers. To get flash ID (as hex):
@@ -103,8 +93,7 @@ NODE_DBG("Flash_ID = %x", flash_id);
 - `0x1FC000 - 0x200000`:  Unused (SDK config)
 
 
-##SPIFFS:
------------------------
+## SPIFFS:
 
 The address to flash SPIFFS must (I think) be on a proper multiple of the
 logical block size, and must not overlap with irom at all.
@@ -112,13 +101,11 @@ logical block size, and must not overlap with irom at all.
 [TECH SPEC](https://github.com/pellepl/spiffs/blob/master/docs/TECH_SPEC)
 
 
-##Pin Configurations
------------------------
+## Pin Configurations
 
 **Bold** == for flashing only
 
-###RFM69
------------------------
+### RFM69
 
 | RFM69HW | ESP-12E |
 | ------- | --------|
@@ -128,8 +115,7 @@ logical block size, and must not overlap with irom at all.
 | CS/SS   | GPIO15  |
 | DIO0    | GPIO5   |
 
-###GPIO
------------------------
+### GPIO
 
 | I/O          | ESP-12E  |
 | ------------ | -------- |
@@ -139,15 +125,13 @@ logical block size, and must not overlap with irom at all.
 | BUTTON-GND   | RST      |
 
 
-##Debug Tools
------------------------
+## Debug Tools
 
 * [Allow COORS in Chrome](https://chrome.google.com/webstore/detail/allow-control-allow-origi/nlfbmbojpeacfghkpbjhddihlkkiljbi/related?hl=en)
 * [Brackets HTML/CSS/JS Editor](http://brackets.io/)
 
 
-##Module List
------------------------
+## Module List
 
 * [MQTT](https://github.com/tuanpmt/esp_mqtt)
 * [SPIFFS](https://github.com/pellepl/spiffs)
@@ -160,17 +144,16 @@ logical block size, and must not overlap with irom at all.
 * [SPI Driver](https://github.com/MetalPhreak/ESP8266_SPI_Driver)
 
 
-##Screenies
------------------------
+## Preview
 
-###Console
+### Console
 ![Console](doc/console.png?raw=true "Console")
 
-###File System
+### File System
 ![File System](doc/filesys.png?raw=true "File System")
 
-###Uploader
+### Uploader
 ![Uploader](doc/uploader.png?raw=true "Uploader")
 
-###OTA Updater
+### OTA Updater
 ![OTA Updater](doc/ota.png "OTA Updater")
